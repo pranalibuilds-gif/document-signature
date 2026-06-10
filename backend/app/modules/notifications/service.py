@@ -7,6 +7,7 @@ from app.modules.notifications.repository import NotificationRepository
 from app.modules.notifications.providers.mailtrap import MailtrapProvider
 from app.modules.audit.service import AuditService
 from app.common.enums import NotificationType, NotificationStatus, AuditActorType, AuditEventType
+from app.core.logging import logger
 
 class NotificationService:
     def __init__(self, session: AsyncSession):
@@ -46,6 +47,7 @@ class NotificationService:
         # 3. Update status
         if success:
             await self.repo.update_status(notification.id, NotificationStatus.SENT)
+            logger.info(f"Notification sent: {notification.id} to {recipient_email}")
 
             # Audit success
             await self.audit_service.record_event(
@@ -58,6 +60,7 @@ class NotificationService:
         else:
             final_error = error_msg or "Provider delivery failed"
             await self.repo.update_status(notification.id, NotificationStatus.FAILED, final_error)
+            logger.error(f"Notification failed: {notification.id} to {recipient_email}. Error: {final_error}")
 
             # Audit failure
             await self.audit_service.record_event(

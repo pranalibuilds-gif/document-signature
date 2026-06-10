@@ -16,6 +16,7 @@ from app.common.enums import AuditActorType, AuditEventType, NotificationType
 from app.core.security.hashing import hash_password, verify_password
 from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.core.config import settings
+from app.core.logging import logger
 
 class AuthService:
     def __init__(self, session: AsyncSession):
@@ -45,6 +46,7 @@ class AuthService:
             last_name=user_in.last_name,
         )
         created_user = await self.user_repo.create(user)
+        logger.info(f"User registered successfully: {created_user.email}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.USER_REGISTERED,
@@ -87,6 +89,7 @@ class AuthService:
         if not user.is_verified:
             user.is_verified = True
             await self.session.flush()
+            logger.info(f"Email verified for user: {user.email}")
 
             await self.audit_service.record_event(
                 event_type=AuditEventType.EMAIL_VERIFIED,
@@ -127,6 +130,7 @@ class AuthService:
     async def login(self, login_data: LoginRequest) -> TokenResponse:
         user = await self.user_repo.get_by_email(login_data.email)
         if not user or not verify_password(login_data.password, user.hashed_password):
+            logger.warning(f"Failed login attempt for email: {login_data.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -139,6 +143,7 @@ class AuthService:
             )
 
         token_pair = await self._create_token_pair(user)
+        logger.info(f"User login successful: {user.email}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.USER_LOGIN,

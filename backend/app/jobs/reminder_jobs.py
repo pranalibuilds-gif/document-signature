@@ -5,8 +5,7 @@ from app.modules.signers.repository import SignerRepository
 from app.modules.notifications.service import NotificationService
 from app.modules.documents.repository import DocumentRepository
 from app.common.enums import NotificationType
-
-logger = logging.getLogger(__name__)
+from app.core.logging import logger
 
 async def send_signer_reminders_job():
     logger.info("Starting signer reminder job...")

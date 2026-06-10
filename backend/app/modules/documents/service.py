@@ -15,6 +15,7 @@ from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, SignerStatus, AuditActorType, AuditEventType, NotificationType
 from app.utils.storage import StorageService
 from app.core.config import settings
+from app.core.logging import logger
 
 class DocumentService:
     def __init__(self, session: AsyncSession):
@@ -37,6 +38,7 @@ class DocumentService:
             status=DocumentStatus.DRAFT
         )
         created_doc = await self.repo.create(document)
+        logger.info(f"Document created: {created_doc.id} - Title: {created_doc.title}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.DOCUMENT_CREATED,
@@ -98,6 +100,7 @@ class DocumentService:
         # 4. Update Status
         document.status = DocumentStatus.PENDING
         await self.repo.update(document)
+        logger.info(f"Document activated: {document_id}")
 
         # 5. Audit
         await self.audit_service.record_event(
@@ -136,6 +139,7 @@ class DocumentService:
             document.status = DocumentStatus.REJECTED
             document.rejected_at = datetime.now(timezone.utc)
             await self.repo.update(document)
+            logger.info(f"Document rejected: {document_id}")
 
             # Audit
             rejected_signer = next(s for s in signers if s.status == SignerStatus.REJECTED)
@@ -159,6 +163,7 @@ class DocumentService:
             document.status = DocumentStatus.COMPLETED
             document.completed_at = datetime.now(timezone.utc)
             await self.repo.update(document)
+            logger.info(f"Document completed: {document_id}")
 
             # Audit
             await self.audit_service.record_event(
@@ -296,6 +301,7 @@ class DocumentService:
             setattr(document, field, value)
 
         updated_doc = await self.repo.update(document)
+        logger.info(f"Document updated: {document_id}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.DOCUMENT_UPDATED,
@@ -323,6 +329,7 @@ class DocumentService:
         file_paths = [f.file_path for f in files_result.scalars().all()]
 
         await self.repo.delete(document_id)
+        logger.info(f"Document deleted: {document_id}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.DOCUMENT_DELETED,

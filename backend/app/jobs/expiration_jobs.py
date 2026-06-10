@@ -4,8 +4,7 @@ from app.core.database import AsyncSessionLocal
 from app.modules.documents.repository import DocumentRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, AuditActorType, AuditEventType
-
-logger = logging.getLogger(__name__)
+from app.core.logging import logger
 
 async def expire_documents_job():
     logger.info("Starting document expiration job...")

@@ -16,6 +16,7 @@ from app.modules.documents.repository import DocumentRepository
 from app.modules.fields.repository import SignatureFieldRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, SignerStatus, AuditActorType, AuditEventType, FieldType
+from app.core.logging import logger
 
 class SigningService:
     def __init__(self, session: AsyncSession):
@@ -35,15 +36,19 @@ class SigningService:
         token = await self.signer_repo.get_token_by_hash(token_hash)
 
         if not token:
+            logger.warning(f"Invalid signing link attempt with hash: {token_hash}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid signing link")
 
         if token.expires_at < datetime.now(timezone.utc):
+            logger.warning(f"Expired signing link attempt for signer: {token.document_signer_id}")
             raise HTTPException(status_code=status.HTTP_410_GONE, detail="Signing link has expired")
 
         # used_at logic: In 3.4B we don't block opening if used_at is set,
         # but we might block if the signer has already signed.
 
         signer = await self.signer_repo.get_by_id(token.document_signer_id)
+        logger.info(f"Signer session opened: {signer.email} for document {signer.document_id}")
+
         if signer.status == SignerStatus.SIGNED:
              raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You have already signed this document")
 
@@ -135,6 +140,7 @@ class SigningService:
 
         # 7. Evaluate Document Status
         await self.doc_service.evaluate_document_status(document.id)
+        logger.info(f"Signer {signer.email} completed signing for document {document.id}")
 
     async def reject_document(self, raw_token: str, rejection: RejectionRequest) -> None:
         token = await self.validate_signing_token(raw_token)
@@ -150,3 +156,4 @@ class SigningService:
 
         # 2. Evaluate Document Status (This will mark document as REJECTED and notify owner)
         await self.doc_service.evaluate_document_status(document.id)
+        logger.info(f"Signer {signer.email} rejected document {document.id}")

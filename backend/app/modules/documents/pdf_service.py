@@ -16,6 +16,7 @@ from app.modules.signing.repository import SigningRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import AuditActorType, AuditEventType, FieldType
 from app.core.config import settings
+from app.core.logging import logger
 
 class PdfGenerationService:
     def __init__(self, session: AsyncSession):
@@ -30,6 +31,7 @@ class PdfGenerationService:
         """
         Generates the final signed PDF by overlaying field values onto the original PDF.
         """
+        logger.info(f"Generating final PDF for document: {document_id}")
         # 1. Prevent regeneration
         existing_final = await self.doc_repo.get_final_file(document_id)
         if existing_final:
@@ -127,6 +129,7 @@ class PdfGenerationService:
             is_final=True
         )
         created_file = await self.doc_repo.create_file(final_doc_file)
+        logger.info(f"Final PDF generated successfully: {final_path}")
 
         # 7. Audit
         await self.audit_service.record_event(

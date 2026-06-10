@@ -2,8 +2,7 @@ import logging
 from app.core.database import AsyncSessionLocal
 from app.modules.signers.repository import SignerRepository
 from app.modules.auth.repository import AuthRepository
-
-logger = logging.getLogger(__name__)
+from app.core.logging import logger
 
 async def cleanup_tokens_job():
     logger.info("Starting token cleanup job...")
