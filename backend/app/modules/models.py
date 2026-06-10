@@ -6,6 +6,7 @@ from app.modules.notifications.models import Notification
 from app.modules.documents.models import Document, DocumentFile
 from app.modules.signers.models import DocumentSigner, SigningToken
 from app.modules.fields.models import SignatureField
+from app.modules.signing.models import FieldValue
 
 # This list will grow as we add more modules
-__all__ = ["User", "RefreshToken", "AuditLog", "Notification", "Document", "DocumentFile", "DocumentSigner", "SignatureField"]
+__all__ = ["User", "RefreshToken", "AuditLog", "Notification", "Document", "DocumentFile", "DocumentSigner", "SignatureField", "FieldValue"]
