@@ -51,4 +51,7 @@ class Settings(BaseSettings):
     # Scheduler Settings
     SCHEDULER_ENABLED: bool = True
 
+    # Business Rules
+    MAX_SIGNERS_PER_DOCUMENT: int = 15
+
 settings = Settings()
