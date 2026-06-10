@@ -1,39 +1,30 @@
 [project]
-name = "docu-sign-backend"
+name = "docusign-mini-backend"
 version = "0.1.0"
-description = "FastAPI backend for Document Signature SaaS"
-readme = "README.md"
-requires-python = ">=3.10"
+description = "A document signature platform"
 dependencies = [
     "fastapi",
-    "uvicorn[standard]",
-    "sqlalchemy[asyncio]>=2.0.0",
+    "uvicorn",
+    "sqlalchemy[asyncio]",
     "asyncpg",
-    "alembic",
     "pydantic-settings",
+    "alembic",
     "python-jose[cryptography]",
     "passlib[bcrypt]",
-    "bcrypt",
     "python-multipart",
-    "email-validator",
-    "apscheduler",
-    "pymupdf",
     "reportlab",
     "pypdf",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-asyncio",
+    "apscheduler",
+    "slowapi",
     "httpx",
-    "ruff",
-    "black",
+    "jinja2",
 ]
 
 [tool.ruff]
-line-length = 88
-target-version = "py310"
+line-length = 120
+target-version = "py312"
 
-[tool.black]
-line-length = 88
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
