@@ -34,7 +34,12 @@ class Settings(BaseSettings):
 
     # File Storage
     STORAGE_BASE_PATH: str = "./storage"
-    MAX_UPLOAD_SIZE: int = 10485760  # 10MB
+    MAX_UPLOAD_SIZE_MB: int = 20
+
+    @computed_field
+    @property
+    def MAX_UPLOAD_SIZE(self) -> int:
+        return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
     # Email Settings
     MAIL_SERVER: Optional[str] = None

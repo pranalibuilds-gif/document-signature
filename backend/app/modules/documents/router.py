@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, get_current_user
 from app.modules.users.models import User
 from app.modules.documents.service import DocumentService
 from app.modules.documents.schemas import DocumentCreate, DocumentUpdate, DocumentRead
+from app.utils.storage import StorageService
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -17,6 +19,35 @@ async def create_document(
     document = await service.create_document(current_user.id, doc_in)
     await db.commit()
     return document
+
+@router.post("/{document_id}/upload", status_code=status.HTTP_200_OK)
+async def upload_document_file(
+    document_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import uuid
+    service = DocumentService(db)
+    doc_file = await service.upload_file(uuid.UUID(document_id), current_user.id, file)
+    await db.commit()
+
+    # Post-commit cleanup of old physical file
+    if hasattr(doc_file, "_old_path_to_delete"):
+        StorageService().delete_file(doc_file._old_path_to_delete)
+
+    return {"message": "File uploaded successfully", "file_name": doc_file.file_name}
+
+@router.get("/{document_id}/file")
+async def download_document_file(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import uuid
+    service = DocumentService(db)
+    file_path = await service.get_document_file_path(uuid.UUID(document_id), current_user.id)
+    return FileResponse(file_path, media_type="application/pdf")
 
 @router.get("", response_model=list[DocumentRead])
 async def list_documents(
