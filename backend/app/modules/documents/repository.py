@@ -77,3 +77,17 @@ class DocumentRepository:
         await self.session.execute(
             delete(DocumentFile).where(DocumentFile.id == file_id)
         )
+
+    async def get_expired_documents(self) -> list[Document]:
+        from datetime import datetime, timezone
+        from app.common.enums import DocumentStatus
+        now = datetime.now(timezone.utc)
+        result = await self.session.execute(
+            select(Document).where(
+                and_(
+                    Document.status.in_([DocumentStatus.PENDING, DocumentStatus.PARTIALLY_SIGNED]),
+                    Document.expires_at < now
+                )
+            )
+        )
+        return list(result.scalars().all())

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.auth.models import RefreshToken
 
@@ -33,3 +33,17 @@ class AuthRepository:
             .where(RefreshToken.revoked_at.is_(None))
             .values(revoked_at=datetime.now(timezone.utc))
         )
+
+    async def cleanup_expired_refresh_tokens(self, retention_days: int = 30) -> int:
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        retention_threshold = now - timedelta(days=retention_days)
+
+        stmt = delete(RefreshToken).where(
+            or_(
+                and_(RefreshToken.expires_at < now, RefreshToken.created_at < retention_threshold),
+                and_(RefreshToken.revoked_at.is_not(None), RefreshToken.revoked_at < retention_threshold)
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount

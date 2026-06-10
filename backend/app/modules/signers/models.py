@@ -30,6 +30,8 @@ class DocumentSigner(Base, UUIDMixin, TimestampMixin):
 
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    last_reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Relationships
     document = relationship("Document", back_populates="signers")
     user = relationship("User", backref="signer_assignments")
