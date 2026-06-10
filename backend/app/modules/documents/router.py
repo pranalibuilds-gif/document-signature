@@ -49,6 +49,28 @@ async def download_document_file(
     file_path = await service.get_document_file_path(uuid.UUID(document_id), current_user.id)
     return FileResponse(file_path, media_type="application/pdf")
 
+@router.get("/{document_id}/final-file")
+async def download_final_document(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import uuid
+    from fastapi import HTTPException
+    from app.common.enums import DocumentStatus
+    service = DocumentService(db)
+    doc_id = uuid.UUID(document_id)
+
+    document = await service.get_document(doc_id, current_user.id)
+    if document.status != DocumentStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Document is not completed")
+
+    final_file = await service.repo.get_final_file(doc_id)
+    if not final_file:
+        raise HTTPException(status_code=404, detail="Final PDF not generated yet")
+
+    return FileResponse(final_file.file_path, media_type="application/pdf")
+
 @router.post("/{document_id}/activate", status_code=status.HTTP_200_OK)
 async def activate_document(
     document_id: str,

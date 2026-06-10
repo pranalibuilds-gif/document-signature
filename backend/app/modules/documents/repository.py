@@ -59,6 +59,20 @@ class DocumentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_final_file(self, document_id: uuid.UUID) -> DocumentFile | None:
+        result = await self.session.execute(
+            select(DocumentFile)
+            .where(
+                and_(
+                    DocumentFile.document_id == document_id,
+                    DocumentFile.is_final == True
+                )
+            )
+            .order_by(DocumentFile.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def delete_file_record(self, file_id: uuid.UUID) -> None:
         await self.session.execute(
             delete(DocumentFile).where(DocumentFile.id == file_id)

@@ -168,6 +168,11 @@ class DocumentService:
                 document_id=document_id
             )
 
+            # Generate Final PDF (Post-completion artifact)
+            from app.modules.documents.pdf_service import PdfGenerationService
+            pdf_service = PdfGenerationService(self.session)
+            await pdf_service.generate_final_pdf(document_id)
+
         elif any_signed and document.status == DocumentStatus.PENDING:
             document.status = DocumentStatus.PARTIALLY_SIGNED
             await self.repo.update(document)

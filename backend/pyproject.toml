@@ -18,6 +18,8 @@ dependencies = [
     "email-validator",
     "apscheduler",
     "pymupdf",
+    "reportlab",
+    "pypdf",
 ]
 
 [project.optional-dependencies]
