@@ -49,6 +49,43 @@ async def download_document_file(
     file_path = await service.get_document_file_path(uuid.UUID(document_id), current_user.id)
     return FileResponse(file_path, media_type="application/pdf")
 
+@router.post("/{document_id}/activate", status_code=status.HTTP_200_OK)
+async def activate_document(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import uuid
+    from app.common.enums import NotificationType
+    service = DocumentService(db)
+    doc_id = uuid.UUID(document_id)
+
+    # 1. Activate (DB Changes)
+    # We need the document object to get invitation data
+    document = await service.repo.get_by_id(doc_id)
+    if not document:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    await service.activate_document(doc_id, current_user.id)
+    await db.commit()
+
+    # 2. Send Notifications (Post-Commit)
+    # Note: Service attached _invitation_data to the document instance
+    if hasattr(document, "_invitation_data"):
+        for signer, raw_token in document._invitation_data:
+            # Construct link (Base URL would normally come from config)
+            link = f"http://localhost:3000/signing/{raw_token}"
+            await service.notification_service.send_notification(
+                recipient_email=signer.email,
+                subject=f"Signature Required: {document.title}",
+                body=f"You have been invited to sign '{document.title}'. Use this link: {link}",
+                type=NotificationType.INVITATION,
+                document_id=doc_id
+            )
+
+    return {"message": "Document activated and invitations sent"}
+
 @router.get("", response_model=list[DocumentRead])
 async def list_documents(
     skip: int = 0,

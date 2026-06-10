@@ -27,6 +27,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
     # Relationships
     owner = relationship("User", backref="owned_documents")
     files = relationship("DocumentFile", back_populates="document", cascade="all, delete-orphan")
+    signers = relationship("DocumentSigner", back_populates="document", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Document {self.title} ({self.status})>"

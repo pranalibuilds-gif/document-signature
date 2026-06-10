@@ -53,5 +53,6 @@ class Settings(BaseSettings):
 
     # Business Rules
     MAX_SIGNERS_PER_DOCUMENT: int = 15
+    SIGNING_TOKEN_EXPIRY_DAYS: int = 30
 
 settings = Settings()

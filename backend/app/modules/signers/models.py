@@ -31,8 +31,9 @@ class DocumentSigner(Base, UUIDMixin, TimestampMixin):
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Relationships
-    document = relationship("Document", backref="signers")
+    document = relationship("Document", back_populates="signers")
     user = relationship("User", backref="signer_assignments")
+    tokens = relationship("SigningToken", back_populates="signer", cascade="all, delete-orphan")
 
     # Constraints
     __table_args__ = (
@@ -41,3 +42,20 @@ class DocumentSigner(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<DocumentSigner {self.email} for document {self.document_id}>"
+
+class SigningToken(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "signing_tokens"
+
+    document_signer_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_signers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    signer = relationship("DocumentSigner", back_populates="tokens")
+
+    def __repr__(self) -> str:
+        return f"<SigningToken signer_id={self.document_signer_id}>"

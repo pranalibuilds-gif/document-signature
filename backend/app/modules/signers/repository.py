@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.signers.models import DocumentSigner
+from app.modules.signers.models import DocumentSigner, SigningToken
 
 class SignerRepository:
     def __init__(self, session: AsyncSession):
@@ -42,3 +42,15 @@ class SignerRepository:
             select(func.count()).select_from(DocumentSigner).where(DocumentSigner.document_id == document_id)
         )
         return result.scalar_one()
+
+    # Token operations
+    async def create_token(self, token: SigningToken) -> SigningToken:
+        self.session.add(token)
+        await self.session.flush()
+        return token
+
+    async def get_token_by_hash(self, token_hash: str) -> SigningToken | None:
+        result = await self.session.execute(
+            select(SigningToken).where(SigningToken.token_hash == token_hash)
+        )
+        return result.scalar_one_or_none()

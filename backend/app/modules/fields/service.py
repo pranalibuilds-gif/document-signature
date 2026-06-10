@@ -5,7 +5,6 @@ from sqlalchemy import select
 from app.modules.fields.models import SignatureField
 from app.modules.fields.repository import SignatureFieldRepository
 from app.modules.fields.schemas import SignatureFieldCreate
-from app.modules.documents.service import DocumentService
 from app.modules.signers.repository import SignerRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, AuditActorType, AuditEventType
@@ -14,15 +13,25 @@ class FieldService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = SignatureFieldRepository(session)
-        self.doc_service = DocumentService(session)
+        # Avoid circular import by using local import or document repository directly
         self.signer_repo = SignerRepository(session)
         self.audit_service = AuditService(session)
+
+    async def _get_document_checked(self, document_id: uuid.UUID, user_id: uuid.UUID):
+        from app.modules.documents.repository import DocumentRepository
+        doc_repo = DocumentRepository(self.session)
+        document = await doc_repo.get_by_id(document_id)
+        if not document:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        if document.owner_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        return document
 
     async def add_field(
         self, document_id: uuid.UUID, user_id: uuid.UUID, field_in: SignatureFieldCreate
     ) -> SignatureField:
         # 1. Validate ownership and DRAFT status
-        document = await self.doc_service.get_document(document_id, user_id)
+        document = await self._get_document_checked(document_id, user_id)
         if document.status != DocumentStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -63,7 +72,7 @@ class FieldService:
         self, document_id: uuid.UUID, user_id: uuid.UUID, field_id: uuid.UUID
     ) -> None:
         # 1. Validate ownership and DRAFT status
-        document = await self.doc_service.get_document(document_id, user_id)
+        document = await self._get_document_checked(document_id, user_id)
         if document.status != DocumentStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -103,7 +112,7 @@ class FieldService:
 
     async def list_fields(self, document_id: uuid.UUID, user_id: uuid.UUID) -> list[SignatureField]:
         # Validate ownership
-        await self.doc_service.get_document(document_id, user_id)
+        await self._get_document_checked(document_id, user_id)
         return await self.repo.list_by_document(document_id)
 
     async def validate_document_ready_for_signing(self, document_id: uuid.UUID, user_id: uuid.UUID) -> bool:
@@ -111,7 +120,7 @@ class FieldService:
         Validates if document is ready to be sent for signing.
         Checks: Has PDF, Has Signers, Every Signer has >= 1 field.
         """
-        document = await self.doc_service.get_document(document_id, user_id)
+        await self._get_document_checked(document_id, user_id)
 
         # 1. Check if PDF exists
         from app.modules.documents.repository import DocumentRepository
