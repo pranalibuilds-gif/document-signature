@@ -54,6 +54,15 @@ class DocumentService:
         """
         # 1. Validate ownership and DRAFT status
         document = await self.get_document(document_id, user_id)
+
+        # Ownership check is inside get_document. Now check verification.
+        owner = await self.user_repo.get_by_id(user_id)
+        if not owner or not owner.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email verification required to activate documents"
+            )
+
         if document.status != DocumentStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,

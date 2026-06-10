@@ -20,3 +20,19 @@ class RefreshToken(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<RefreshToken user_id={self.user_id}>"
+
+class EmailVerificationToken(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "email_verification_tokens"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationship
+    user = relationship("User", backref="verification_tokens")
+
+    def __repr__(self) -> str:
+        return f"<EmailVerificationToken user_id={self.user_id}>"

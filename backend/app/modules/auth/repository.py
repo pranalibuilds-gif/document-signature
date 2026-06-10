@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import select, update, delete, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.auth.models import RefreshToken
+from app.modules.auth.models import RefreshToken, EmailVerificationToken
 
 class AuthRepository:
     def __init__(self, session: AsyncSession):
@@ -43,6 +43,43 @@ class AuthRepository:
             or_(
                 and_(RefreshToken.expires_at < now, RefreshToken.created_at < retention_threshold),
                 and_(RefreshToken.revoked_at.is_not(None), RefreshToken.revoked_at < retention_threshold)
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount
+
+class EmailVerificationRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create(self, token: EmailVerificationToken) -> EmailVerificationToken:
+        self.session.add(token)
+        await self.session.flush()
+        return token
+
+    async def get_by_hash(self, token_hash: str) -> EmailVerificationToken | None:
+        result = await self.session.execute(
+            select(EmailVerificationToken).where(EmailVerificationToken.token_hash == token_hash)
+        )
+        return result.scalar_one_or_none()
+
+    async def invalidate_user_tokens(self, user_id: uuid.UUID) -> None:
+        await self.session.execute(
+            update(EmailVerificationToken)
+            .where(EmailVerificationToken.user_id == user_id)
+            .where(EmailVerificationToken.used_at.is_(None))
+            .values(used_at=datetime.now(timezone.utc))
+        )
+
+    async def cleanup_expired_tokens(self, retention_days: int = 7) -> int:
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        threshold = now - timedelta(days=retention_days)
+
+        stmt = delete(EmailVerificationToken).where(
+            or_(
+                and_(EmailVerificationToken.expires_at < now, EmailVerificationToken.created_at < threshold),
+                and_(EmailVerificationToken.used_at.is_not(None), EmailVerificationToken.used_at < threshold)
             )
         )
         result = await self.session.execute(stmt)

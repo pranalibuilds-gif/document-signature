@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db
+from app.core.deps import get_db, get_current_user
 from app.modules.auth.service import AuthService
-from app.modules.auth.schemas import LoginRequest, TokenResponse, RefreshRequest
+from app.modules.auth.schemas import LoginRequest, TokenResponse, RefreshRequest, VerifyEmailRequest
 from app.modules.users.schemas import UserCreate, UserRead
+from app.modules.users.models import User
+from app.common.enums import NotificationType
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -12,7 +14,50 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     user = await auth_service.register(user_in)
     await db.commit()
+
+    # Send verification email post-commit
+    if hasattr(user, "_verification_token"):
+        link = f"http://localhost:3000/verify-email?token={user._verification_token}"
+        await auth_service.notification_service.send_notification(
+            recipient_email=user.email,
+            subject="Verify your email",
+            body=f"Welcome! Please verify your email: {link}",
+            type=NotificationType.INVITATION, # We can use specialized type if needed
+            user_id=user.id
+        )
+
     return user
+
+@router.post("/verify-email", status_code=status.HTTP_200_OK)
+async def verify_email(
+    verify_in: VerifyEmailRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    auth_service = AuthService(db)
+    await auth_service.verify_email(verify_in.token)
+    await db.commit()
+    return {"message": "Email verified successfully"}
+
+@router.post("/resend-verification", status_code=status.HTTP_200_OK)
+async def resend_verification(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    auth_service = AuthService(db)
+    raw_token = await auth_service.resend_verification(current_user)
+    await db.commit()
+
+    if raw_token:
+        link = f"http://localhost:3000/verify-email?token={raw_token}"
+        await auth_service.notification_service.send_notification(
+            recipient_email=current_user.email,
+            subject="Verify your email",
+            body=f"Please verify your email: {link}",
+            type=NotificationType.INVITATION,
+            user_id=current_user.id
+        )
+
+    return {"message": "Verification email resent"}
 
 @router.post("/login", response_model=TokenResponse)
 async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):

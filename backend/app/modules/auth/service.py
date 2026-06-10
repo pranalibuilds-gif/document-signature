@@ -1,4 +1,5 @@
 import hashlib
+import secrets
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,11 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.users.repository import UserRepository
 from app.modules.users.models import User
 from app.modules.users.schemas import UserCreate
-from app.modules.auth.repository import AuthRepository
-from app.modules.auth.models import RefreshToken
-from app.modules.auth.schemas import LoginRequest, TokenResponse
+from app.modules.auth.repository import AuthRepository, EmailVerificationRepository
+from app.modules.auth.models import RefreshToken, EmailVerificationToken
+from app.modules.auth.schemas import LoginRequest, TokenResponse, VerifyEmailRequest
 from app.modules.audit.service import AuditService
-from app.common.enums import AuditActorType, AuditEventType
+from app.modules.notifications.service import NotificationService
+from app.common.enums import AuditActorType, AuditEventType, NotificationType
 from app.core.security.hashing import hash_password, verify_password
 from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.core.config import settings
@@ -20,7 +22,9 @@ class AuthService:
         self.session = session
         self.user_repo = UserRepository(session)
         self.auth_repo = AuthRepository(session)
+        self.verification_repo = EmailVerificationRepository(session)
         self.audit_service = AuditService(session)
+        self.notification_service = NotificationService(session)
 
     def _hash_token(self, token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
@@ -48,7 +52,77 @@ class AuthService:
             user_id=created_user.id,
             event_data={"email": created_user.email}
         )
+
+        # Generate verification token
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = self._hash_token(raw_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_EXPIRY_HOURS)
+
+        db_token = EmailVerificationToken(
+            user_id=created_user.id,
+            token_hash=token_hash,
+            expires_at=expires_at
+        )
+        await self.verification_repo.create(db_token)
+
+        # Attach raw token temporarily for router to send email
+        created_user._verification_token = raw_token
+
         return created_user
+
+    async def verify_email(self, token_str: str) -> None:
+        token_hash = self._hash_token(token_str)
+        db_token = await self.verification_repo.get_by_hash(token_hash)
+
+        if not db_token or db_token.used_at or db_token.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification token",
+            )
+
+        user = await self.user_repo.get_by_id(db_token.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not user.is_verified:
+            user.is_verified = True
+            await self.session.flush()
+
+            await self.audit_service.record_event(
+                event_type=AuditEventType.EMAIL_VERIFIED,
+                actor_type=AuditActorType.USER,
+                user_id=user.id
+            )
+
+        db_token.used_at = datetime.now(timezone.utc)
+
+    async def resend_verification(self, user: User) -> str:
+        if user.is_verified:
+            return "" # Already verified, idempotency
+
+        # Invalidate old tokens
+        await self.verification_repo.invalidate_user_tokens(user.id)
+
+        # Create new token
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = self._hash_token(raw_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_EXPIRY_HOURS)
+
+        db_token = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at
+        )
+        await self.verification_repo.create(db_token)
+
+        await self.audit_service.record_event(
+            event_type=AuditEventType.EMAIL_VERIFICATION_SENT,
+            actor_type=AuditActorType.USER,
+            user_id=user.id,
+            event_data={"email": user.email}
+        )
+
+        return raw_token
 
     async def login(self, login_data: LoginRequest) -> TokenResponse:
         user = await self.user_repo.get_by_email(login_data.email)
