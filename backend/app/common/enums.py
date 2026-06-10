@@ -9,6 +9,10 @@ class DocumentStatus(str, Enum):
     EXPIRED = "EXPIRED"
     CANCELED = "CANCELED"
 
+class UserRole(str, Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+
 class SignerStatus(str, Enum):
     PENDING = "PENDING"
     SIGNED = "SIGNED"
