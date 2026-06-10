@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Database
+*.sqlite3
+
+# Environment
+.env
+backend/.env
+
+# IDEs
+.idea/
+.vscode/
+
+# Project Specific
+storage/
+backend/storage/
+backend/alembic/versions/*.py
+!backend/alembic/versions/.gitkeep
+
+# System
+.DS_Store
+Thumbs.db

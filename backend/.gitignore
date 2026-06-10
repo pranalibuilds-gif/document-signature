@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Database
+*.sqlite3
+
+# Environment
+.env
+
+# IDEs
+.idea/
+.vscode/
+
+# Project Specific
+storage/
