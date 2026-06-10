@@ -7,6 +7,9 @@ from app.jobs.scheduler import start_scheduler, stop_scheduler
 from app.core.middleware.request_id import RequestIdMiddleware
 from app.core.exceptions import global_exception_handler, http_exception_handler, validation_exception_handler
 from app.core.logging import logger
+from app.core.rate_limit import limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +29,8 @@ app = FastAPI(
 )
 
 # Middleware
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(RequestIdMiddleware)
 
 # Exception Handlers

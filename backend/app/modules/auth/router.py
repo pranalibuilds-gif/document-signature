@@ -6,11 +6,14 @@ from app.modules.auth.schemas import LoginRequest, TokenResponse, RefreshRequest
 from app.modules.users.schemas import UserCreate, UserRead
 from app.modules.users.models import User
 from app.common.enums import NotificationType
+from app.core.rate_limit import limiter
+from fastapi import Request
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(request: Request, user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     user = await auth_service.register(user_in)
     await db.commit()
@@ -39,7 +42,9 @@ async def verify_email(
     return {"message": "Email verified successfully"}
 
 @router.post("/resend-verification", status_code=status.HTTP_200_OK)
+@limiter.limit("3/minute")
 async def resend_verification(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -60,14 +65,16 @@ async def resend_verification(
     return {"message": "Verification email resent"}
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     tokens = await auth_service.login(login_data)
     await db.commit()
     return tokens
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(refresh_data: RefreshRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def refresh(request: Request, refresh_data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     tokens = await auth_service.refresh(refresh_data.refresh_token)
     await db.commit()
