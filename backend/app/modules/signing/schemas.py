@@ -18,3 +18,6 @@ class SigningSessionRead(BaseModel):
     document: DocumentRead
     signer: SignerRead
     fields: List[SignatureFieldRead]
+
+class RejectionRequest(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)

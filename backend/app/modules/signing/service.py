@@ -8,9 +8,10 @@ from sqlalchemy import select
 
 from app.modules.signing.models import FieldValue
 from app.modules.signing.repository import SigningRepository
-from app.modules.signing.schemas import SigningSubmission
+from app.modules.signing.schemas import SigningSubmission, RejectionRequest
 from app.modules.signers.repository import SignerRepository
 from app.modules.signers.models import SigningToken, DocumentSigner
+from app.modules.documents.service import DocumentService
 from app.modules.documents.repository import DocumentRepository
 from app.modules.fields.repository import SignatureFieldRepository
 from app.modules.audit.service import AuditService
@@ -24,6 +25,7 @@ class SigningService:
         self.doc_repo = DocumentRepository(session)
         self.field_repo = SignatureFieldRepository(session)
         self.audit_service = AuditService(session)
+        self.doc_service = DocumentService(session)
 
     def _hash_token(self, raw_token: str) -> str:
         return hashlib.sha256(raw_token.encode()).hexdigest()
@@ -130,3 +132,21 @@ class SigningService:
             document_id=document.id,
             event_data={"signer_email": signer.email}
         )
+
+        # 7. Evaluate Document Status
+        await self.doc_service.evaluate_document_status(document.id)
+
+    async def reject_document(self, raw_token: str, rejection: RejectionRequest) -> None:
+        token = await self.validate_signing_token(raw_token)
+        signer = await self.signer_repo.get_by_id(token.document_signer_id)
+        document = await self.doc_repo.get_by_id(signer.document_id)
+
+        # 1. Update Signer
+        now = datetime.now(timezone.utc)
+        signer.status = SignerStatus.REJECTED
+        signer.rejected_at = now
+        signer.rejection_reason = rejection.reason
+        token.used_at = now
+
+        # 2. Evaluate Document Status (This will mark document as REJECTED and notify owner)
+        await self.doc_service.evaluate_document_status(document.id)

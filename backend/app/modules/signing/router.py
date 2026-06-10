@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db
 from app.modules.signing.service import SigningService
-from app.modules.signing.schemas import SigningSessionRead, SigningSubmission
+from app.modules.signing.schemas import SigningSessionRead, SigningSubmission, RejectionRequest
 
 router = APIRouter(prefix="/signing", tags=["signing"])
 
@@ -24,3 +24,14 @@ async def submit_signing(
     await service.submit_signature(token, submission)
     await db.commit()
     return {"message": "Signature submitted successfully"}
+
+@router.post("/{token}/reject", status_code=status.HTTP_200_OK)
+async def reject_document(
+    token: str,
+    rejection: RejectionRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    service = SigningService(db)
+    await service.reject_document(token, rejection)
+    await db.commit()
+    return {"message": "Document rejected successfully"}

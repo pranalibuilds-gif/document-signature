@@ -9,9 +9,10 @@ from app.modules.documents.repository import DocumentRepository
 from app.modules.documents.schemas import DocumentCreate, DocumentUpdate
 from app.modules.signers.models import SigningToken
 from app.modules.signers.repository import SignerRepository
+from app.modules.users.repository import UserRepository
 from app.modules.notifications.service import NotificationService
 from app.modules.audit.service import AuditService
-from app.common.enums import DocumentStatus, AuditActorType, AuditEventType, NotificationType
+from app.common.enums import DocumentStatus, SignerStatus, AuditActorType, AuditEventType, NotificationType
 from app.utils.storage import StorageService
 from app.core.config import settings
 
@@ -22,6 +23,7 @@ class DocumentService:
         self.audit_service = AuditService(session)
         self.storage = StorageService()
         self.signer_repo = SignerRepository(session)
+        self.user_repo = UserRepository(session)
         self.notification_service = NotificationService(session)
 
     async def _get_field_service(self):
@@ -101,6 +103,74 @@ class DocumentService:
         document._invitation_data = token_data
 
         return {"message": "Document activated and invitations queued"}
+
+    async def evaluate_document_status(self, document_id: uuid.UUID) -> None:
+        """
+        Re-evaluates document status based on signer actions.
+        """
+        document = await self.repo.get_by_id(document_id)
+        if not document or document.status in [DocumentStatus.COMPLETED, DocumentStatus.REJECTED]:
+            return
+
+        signers = await self.signer_repo.list_by_document(document_id)
+        if not signers:
+            return
+
+        all_signed = all(s.status == SignerStatus.SIGNED for s in signers)
+        any_rejected = any(s.status == SignerStatus.REJECTED for s in signers)
+        any_signed = any(s.status == SignerStatus.SIGNED for s in signers)
+
+        owner = await self.user_repo.get_by_id(document.owner_id)
+        owner_email = owner.email if owner else "Unknown"
+
+        if any_rejected:
+            document.status = DocumentStatus.REJECTED
+            document.rejected_at = datetime.now(timezone.utc)
+            await self.repo.update(document)
+
+            # Audit
+            rejected_signer = next(s for s in signers if s.status == SignerStatus.REJECTED)
+            await self.audit_service.record_event(
+                event_type=AuditEventType.DOCUMENT_REJECTED,
+                actor_type=AuditActorType.SYSTEM,
+                document_id=document_id,
+                event_data={"signer_email": rejected_signer.email}
+            )
+
+            # Notify Owner
+            await self.notification_service.send_notification(
+                recipient_email=owner_email,
+                subject=f"Document Rejected: {document.title}",
+                body=f"Signer {rejected_signer.email} has rejected '{document.title}'. Reason: {rejected_signer.rejection_reason}",
+                type=NotificationType.REJECTION,
+                document_id=document_id
+            )
+
+        elif all_signed:
+            document.status = DocumentStatus.COMPLETED
+            document.completed_at = datetime.now(timezone.utc)
+            await self.repo.update(document)
+
+            # Audit
+            await self.audit_service.record_event(
+                event_type=AuditEventType.DOCUMENT_COMPLETED,
+                actor_type=AuditActorType.SYSTEM,
+                document_id=document_id,
+                event_data={"total_signers": len(signers)}
+            )
+
+            # Notify Owner
+            await self.notification_service.send_notification(
+                recipient_email=owner_email,
+                subject=f"Document Completed: {document.title}",
+                body=f"All signers have signed '{document.title}'. You can now download the finalized document.",
+                type=NotificationType.COMPLETION,
+                document_id=document_id
+            )
+
+        elif any_signed and document.status == DocumentStatus.PENDING:
+            document.status = DocumentStatus.PARTIALLY_SIGNED
+            await self.repo.update(document)
 
     async def get_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> Document:
         document = await self.repo.get_by_id(document_id)
