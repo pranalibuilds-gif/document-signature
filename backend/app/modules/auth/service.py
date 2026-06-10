@@ -9,6 +9,8 @@ from app.modules.users.schemas import UserCreate
 from app.modules.auth.repository import AuthRepository
 from app.modules.auth.models import RefreshToken
 from app.modules.auth.schemas import LoginRequest, TokenResponse
+from app.modules.audit.service import AuditService
+from app.common.enums import AuditActorType, AuditEventType
 from app.core.security.hashing import hash_password, verify_password
 from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.core.config import settings
@@ -18,6 +20,7 @@ class AuthService:
         self.session = session
         self.user_repo = UserRepository(session)
         self.auth_repo = AuthRepository(session)
+        self.audit_service = AuditService(session)
 
     def _hash_token(self, token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
@@ -37,7 +40,15 @@ class AuthService:
             first_name=user_in.first_name,
             last_name=user_in.last_name,
         )
-        return await self.user_repo.create(user)
+        created_user = await self.user_repo.create(user)
+
+        await self.audit_service.record_event(
+            event_type=AuditEventType.USER_REGISTERED,
+            actor_type=AuditActorType.USER,
+            user_id=created_user.id,
+            event_data={"email": created_user.email}
+        )
+        return created_user
 
     async def login(self, login_data: LoginRequest) -> TokenResponse:
         user = await self.user_repo.get_by_email(login_data.email)
@@ -53,7 +64,16 @@ class AuthService:
                 detail="Inactive user",
             )
 
-        return await self._create_token_pair(user)
+        token_pair = await self._create_token_pair(user)
+
+        await self.audit_service.record_event(
+            event_type=AuditEventType.USER_LOGIN,
+            actor_type=AuditActorType.USER,
+            user_id=user.id,
+            event_data={"email": user.email}
+        )
+
+        return token_pair
 
     async def refresh(self, refresh_token_str: str) -> TokenResponse:
         payload = decode_token(refresh_token_str)
