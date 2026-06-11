@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.users.repository import UserRepository
 from app.modules.users.models import User
 from app.modules.users.schemas import UserCreate
-from app.modules.auth.repository import AuthRepository, EmailVerificationRepository
-from app.modules.auth.models import RefreshToken, EmailVerificationToken
-from app.modules.auth.schemas import LoginRequest, TokenResponse
+from app.modules.auth.repository import AuthRepository, EmailVerificationRepository, PasswordResetRepository
+from app.modules.auth.models import RefreshToken, EmailVerificationToken, PasswordResetToken
+from app.modules.auth.schemas import LoginRequest, TokenResponse, ForgotPasswordRequest, ResetPasswordRequest
 from app.modules.audit.service import AuditService
 from app.modules.notifications.service import NotificationService
 from app.common.enums import AuditActorType, AuditEventType
@@ -24,6 +24,7 @@ class AuthService:
         self.user_repo = UserRepository(session)
         self.auth_repo = AuthRepository(session)
         self.verification_repo = EmailVerificationRepository(session)
+        self.password_reset_repo = PasswordResetRepository(session)
         self.audit_service = AuditService(session)
         self.notification_service = NotificationService(session)
 
@@ -98,6 +99,49 @@ class AuthService:
             )
 
         db_token.used_at = datetime.now(timezone.utc)
+
+    async def forgot_password(self, email: str) -> str:
+        user = await self.user_repo.get_by_email(email)
+        if not user:
+            return "" # Silent fail for security
+
+        await self.password_reset_repo.invalidate_user_tokens(user.id)
+
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = self._hash_token(raw_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        db_token = PasswordResetToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at
+        )
+        await self.password_reset_repo.create(db_token)
+        return raw_token
+
+    async def reset_password(self, token_str: str, new_password: str) -> None:
+        token_hash = self._hash_token(token_str)
+        db_token = await self.password_reset_repo.get_by_hash(token_hash)
+
+        if not db_token or db_token.used_at or db_token.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token",
+            )
+
+        user = await self.user_repo.get_by_id(db_token.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.hashed_password = hash_password(new_password)
+        db_token.used_at = datetime.now(timezone.utc)
+
+        await self.audit_service.record_event(
+            event_type=AuditEventType.USER_UPDATED,
+            actor_type=AuditActorType.USER,
+            user_id=user.id,
+            event_data={"action": "password_reset"}
+        )
 
     async def resend_verification(self, user: User) -> str:
         if user.is_verified:

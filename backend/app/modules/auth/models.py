@@ -36,3 +36,19 @@ class EmailVerificationToken(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<EmailVerificationToken user_id={self.user_id}>"
+
+class PasswordResetToken(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "password_reset_tokens"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationship
+    user = relationship("User", backref="password_reset_tokens")
+
+    def __repr__(self) -> str:
+        return f"<PasswordResetToken user_id={self.user_id}>"

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, get_current_user
 from app.modules.auth.service import AuthService
-from app.modules.auth.schemas import LoginRequest, TokenResponse, RefreshRequest, VerifyEmailRequest
+from app.modules.auth.schemas import LoginRequest, TokenResponse, RefreshRequest, VerifyEmailRequest, ForgotPasswordRequest, ResetPasswordRequest
 from app.modules.users.schemas import UserCreate, UserRead
 from app.modules.users.models import User
 from app.common.enums import NotificationType
@@ -40,6 +40,41 @@ async def verify_email(
     await auth_service.verify_email(verify_in.token)
     await db.commit()
     return {"message": "Email verified successfully"}
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    forgot_in: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    auth_service = AuthService(db)
+    raw_token = await auth_service.forgot_password(forgot_in.email)
+    await db.commit()
+
+    if raw_token:
+        link = f"http://localhost:3000/reset-password?token={raw_token}"
+        await auth_service.notification_service.send_notification(
+            recipient_email=forgot_in.email,
+            subject="Reset your password",
+            body=f"Please use the following link to reset your password: {link}. This link expires in 1 hour.",
+            type=NotificationType.REMINDER
+        )
+
+    # Always return success to prevent email enumeration
+    return {"message": "If an account exists with that email, a reset link has been sent."}
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    reset_in: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    auth_service = AuthService(db)
+    await auth_service.reset_password(reset_in.token, reset_in.new_password)
+    await db.commit()
+    return {"message": "Password reset successfully"}
 
 @router.post("/resend-verification", status_code=status.HTTP_200_OK)
 @limiter.limit("3/minute")

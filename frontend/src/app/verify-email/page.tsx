@@ -29,7 +29,12 @@ export default function VerifyEmailPage() {
         // Optionally update store if user is logged in
       } catch (err: any) {
         setStatus("error")
-        setError(err.response?.data?.detail || "Invalid or expired token")
+        const detail = err.response?.data?.detail
+        if (Array.isArray(detail)) {
+          setError(detail[0]?.msg || "Invalid or expired token")
+        } else {
+          setError(detail || "Invalid or expired token")
+        }
       }
     }
 

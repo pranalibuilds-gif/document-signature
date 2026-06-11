@@ -31,7 +31,14 @@ export default function RegisterPage() {
       await api.post("/auth/register", formData)
       router.push("/login?registered=true")
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed. Please try again.")
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        setError(detail[0]?.msg || "Invalid data provided.")
+      } else if (typeof detail === "string") {
+        setError(detail)
+      } else {
+        setError("Registration failed. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }

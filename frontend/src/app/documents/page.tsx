@@ -27,7 +27,8 @@ export default function DocumentsPage() {
         const res = await api.get("/documents")
         setDocuments(res.data)
       } catch (err: any) {
-        setError("Failed to load documents. Please try again.")
+        const detail = err.response?.data?.detail
+        setError(typeof detail === "string" ? detail : "Failed to load documents. Please try again.")
       } finally {
         setIsLoading(false)
       }

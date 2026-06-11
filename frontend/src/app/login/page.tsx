@@ -46,7 +46,14 @@ export default function LoginPage() {
       setAuth(userResponse.data, access_token, refresh_token)
       router.push("/dashboard")
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to sign in. Please check your credentials.")
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        setError(detail[0]?.msg || "Invalid data provided.")
+      } else if (typeof detail === "string") {
+        setError(detail)
+      } else {
+        setError("Failed to sign in. Please check your credentials.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +96,6 @@ export default function LoginPage() {
                   disabled={isLoading}
                 />
               </div>
-              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   <Link

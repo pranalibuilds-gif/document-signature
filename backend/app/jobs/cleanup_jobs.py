@@ -16,8 +16,12 @@ async def cleanup_tokens_job():
             refresh_count = await auth_repo.cleanup_expired_refresh_tokens(retention_days=30)
             verify_count = await verify_repo.cleanup_expired_tokens(retention_days=7)
 
+            from app.modules.auth.repository import PasswordResetRepository
+            reset_repo = PasswordResetRepository(session)
+            reset_count = await reset_repo.cleanup_expired_tokens(retention_days=1)
+
             await session.commit()
-            logger.info(f"Cleanup finished. Deleted {signing_count} signing, {refresh_count} refresh, and {verify_count} verification tokens.")
+            logger.info(f"Cleanup finished. Deleted {signing_count} signing, {refresh_count} refresh, {verify_count} verification, and {reset_count} reset tokens.")
 
         except Exception as e:
             logger.error(f"Error in cleanup_tokens_job: {e}")
