@@ -1,17 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { PageContainer } from "@/components/layout/page-container"
 import { SectionHeader } from "@/components/layout/section-header"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
-import { FileText, Plus, Search, Filter } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { DocumentStatusBadge } from "@/components/documents/document-status-badge"
+import { FileText, Plus, Search, Filter, Calendar, Users, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import api from "@/lib/api"
 
 export default function DocumentsPage() {
   const [search, setSearch] = useState("")
+  const [documents, setDocuments] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const res = await api.get("/documents")
+        setDocuments(res.data)
+      } catch (err: any) {
+        setError("Failed to load documents. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchDocuments()
+  }, [])
+
+  const filteredDocs = documents.filter(doc =>
+    doc.title.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <ProtectedRoute>
@@ -21,9 +47,11 @@ export default function DocumentsPage() {
             title="Documents"
             description="Manage your documents and track signing progress."
             actions={
-              <Button className="btn-accent">
-                <Plus size={18} className="mr-2" />
-                New Document
+              <Button className="btn-accent" asChild>
+                <Link href="/documents/create">
+                  <Plus size={18} className="mr-2" />
+                  New Document
+                </Link>
               </Button>
             }
           />
@@ -32,7 +60,7 @@ export default function DocumentsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
               <Input
-                placeholder="Search by title or email..."
+                placeholder="Search by title..."
                 className="pl-10 h-11"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -44,11 +72,64 @@ export default function DocumentsPage() {
             </Button>
           </div>
 
-          <EmptyState
-            title="No results found"
-            description="Try adjusting your search or filters to find what you're looking for."
-            icon={FileText}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-24 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : error ? (
+            <EmptyState
+              title="Something went wrong"
+              description={error}
+              icon={FileText}
+              action={<Button onClick={() => window.location.reload()}>Retry</Button>}
+            />
+          ) : filteredDocs.length === 0 ? (
+            <EmptyState
+              title={search ? "No results found" : "No documents yet"}
+              description={search ? "Try adjusting your search to find what you're looking for." : "Upload your first document to start the signing process."}
+              icon={FileText}
+              action={!search ? (
+                <Button className="btn-accent" asChild>
+                  <Link href="/documents/create">Upload PDF</Link>
+                </Button>
+              ) : undefined}
+            />
+          ) : (
+            <div className="grid gap-4">
+              {filteredDocs.map((doc) => (
+                <Link key={doc.id} href={`/documents/${doc.id}/${doc.status === 'DRAFT' ? 'setup' : 'editor'}`}>
+                  <Card className="hover:border-accent/40 transition-all group cursor-pointer border-border/50 shadow-sm">
+                    <CardContent className="p-0">
+                      <div className="flex items-center p-5">
+                        <div className="p-3 rounded-lg bg-stone-100 text-stone-500 group-hover:bg-accent/10 group-hover:text-accent transition-colors mr-4">
+                          <FileText size={24} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h4 className="text-sm font-semibold text-primary truncate">{doc.title}</h4>
+                            <DocumentStatusBadge status={doc.status} />
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar size={12} />
+                              {new Date(doc.created_at).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users size={12} />
+                              Signers assigned
+                            </div>
+                          </div>
+                        </div>
+                        <ChevronRight size={20} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </PageContainer>
       </DashboardLayout>
     </ProtectedRoute>

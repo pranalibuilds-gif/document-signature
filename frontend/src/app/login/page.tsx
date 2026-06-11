@@ -12,10 +12,15 @@ import { PenTool, Loader2 } from "lucide-react"
 import api from "@/lib/api"
 import { useAuthStore } from "@/store/use-auth-store"
 
+import { useSearchParams } from "next/navigation"
+
 export default function LoginPage() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    searchParams.get("expired") ? "Your session has expired. Please sign in again." : null
+  )
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const setAuth = useAuthStore((state) => state.setAuth)
