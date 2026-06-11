@@ -221,9 +221,9 @@ export default function DocumentEditorPage() {
               <Eye size={16} className="mr-2" />
               Preview
             </Button>
-            <Button size="sm" className="btn-accent" onClick={handleActivate}>
+            <Button size="sm" className="btn-accent" onClick={() => router.push(`/documents/${id}/review`)}>
               <Send size={16} className="mr-2" />
-              Send for Signing
+              Finish & Review
             </Button>
           </div>
         </header>

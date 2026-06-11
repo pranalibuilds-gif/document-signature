@@ -100,7 +100,10 @@ export default function DocumentsPage() {
           ) : (
             <div className="grid gap-4">
               {filteredDocs.map((doc) => (
-                <Link key={doc.id} href={`/documents/${doc.id}/${doc.status === 'DRAFT' ? 'setup' : 'editor'}`}>
+                <Link
+                  key={doc.id}
+                  href={doc.status === 'DRAFT' ? `/documents/${doc.id}/setup` : `/documents/${doc.id}`}
+                >
                   <Card className="hover:border-accent/40 transition-all group cursor-pointer border-border/50 shadow-sm">
                     <CardContent className="p-0">
                       <div className="flex items-center p-5">

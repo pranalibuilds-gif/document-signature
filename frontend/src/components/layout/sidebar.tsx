@@ -22,7 +22,9 @@ const navigation = [
 ]
 
 const adminNavigation = [
-  { name: "Admin Panel", href: "/admin", icon: ShieldCheck },
+  { name: "Admin Overview", href: "/admin", icon: ShieldCheck, exact: true },
+  { name: "User Management", href: "/admin/users", icon: Users },
+  { name: "Audit Trail", href: "/admin/audit", icon: History },
 ]
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -30,7 +32,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="flex h-full w-full flex-col border-r bg-card relative">
-      <div className="flex h-16 items-center justify-between px-6">
+      <div className="flex h-16 items-center justify-between px-6 shrink-0">
         <Link href="/" className="flex items-center gap-2">
           <div className="rounded-lg bg-accent p-1.5 text-accent-foreground">
             <PenTool size={20} />
@@ -47,9 +49,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = pathname.startsWith(item.href)
+          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
           return (
             <Link
               key={item.name}
@@ -73,18 +75,19 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           )
         })}
 
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            System
+        <div className="pt-6 pb-2">
+          <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+            System Administration
           </p>
         </div>
 
         {adminNavigation.map((item) => {
-          const isActive = pathname.startsWith(item.href)
+          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
           return (
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
