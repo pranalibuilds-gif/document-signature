@@ -271,7 +271,7 @@ class DocumentService:
         return created_file
 
     async def get_document_file_path(self, document_id: uuid.UUID, user_id: uuid.UUID) -> str:
-        document = await self.get_document(document_id, user_id)
+        await self.get_document(document_id, user_id)
         doc_file = await self.repo.get_original_file(document_id)
 
         if not doc_file:

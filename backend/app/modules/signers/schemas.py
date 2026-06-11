@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import EmailStr, Field
+from pydantic import EmailStr
 from app.common.schemas import BaseSchema, IDSchema, TimestampSchema
 from app.common.enums import SignerStatus
 

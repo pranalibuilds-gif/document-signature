@@ -1,6 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, List, Any
-from app.modules.users.schemas import UserRead
+from typing import List
 
 class DashboardMetrics(BaseModel):
     users: int

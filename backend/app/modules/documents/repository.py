@@ -51,7 +51,7 @@ class DocumentRepository:
             .where(
                 and_(
                     DocumentFile.document_id == document_id,
-                    DocumentFile.is_final == False
+                    DocumentFile.is_final.is_(False)
                 )
             )
             .order_by(DocumentFile.created_at.desc())
@@ -65,7 +65,7 @@ class DocumentRepository:
             .where(
                 and_(
                     DocumentFile.document_id == document_id,
-                    DocumentFile.is_final == True
+                    DocumentFile.is_final.is_(True)
                 )
             )
             .order_by(DocumentFile.created_at.desc())

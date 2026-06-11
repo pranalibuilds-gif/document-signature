@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timezone
 from app.core.database import AsyncSessionLocal
 from app.modules.signers.repository import SignerRepository
@@ -20,11 +19,12 @@ async def send_signer_reminders_job():
 
             for signer in pending_signers:
                 document = await doc_repo.get_by_id(signer.document_id)
-                if not document: continue
+                if not document:
+                    continue
 
                 # Fetch active token for this signer
                 from sqlalchemy import text
-                token_res = await session.execute(
+                await session.execute(
                     text("SELECT id FROM signing_tokens WHERE document_signer_id = :sid AND used_at IS NULL LIMIT 1"),
                     {"sid": signer.id}
                 )

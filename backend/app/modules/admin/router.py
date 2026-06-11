@@ -1,6 +1,6 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, require_admin
 from app.modules.admin.service import AdminService
@@ -81,7 +81,7 @@ async def get_health_details(
     try:
         await db.execute(text("SELECT 1"))
         db_alive = True
-    except:
+    except Exception:
         pass
 
     storage_ok = os.path.exists(settings.STORAGE_BASE_PATH)

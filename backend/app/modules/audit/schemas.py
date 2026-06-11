@@ -1,7 +1,6 @@
 from typing import Any
 import uuid
-from pydantic import Field
-from app.common.schemas import BaseSchema, IDSchema, TimestampSchema
+from app.common.schemas import IDSchema, TimestampSchema
 from app.common.enums import AuditActorType, AuditEventType
 
 class AuditLogRead(IDSchema, TimestampSchema):

@@ -1,7 +1,6 @@
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from app.modules.fields.models import SignatureField
 from app.modules.fields.repository import SignatureFieldRepository
 from app.modules.fields.schemas import SignatureFieldCreate

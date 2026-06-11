@@ -1,4 +1,3 @@
-import logging
 from app.core.database import AsyncSessionLocal
 from app.modules.signers.repository import SignerRepository
 from app.modules.auth.repository import AuthRepository

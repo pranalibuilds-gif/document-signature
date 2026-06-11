@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, UUID, DateTime, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, UUID, DateTime, Text
 from app.common.models import UUIDMixin, TimestampMixin
 from app.core.database import Base
 

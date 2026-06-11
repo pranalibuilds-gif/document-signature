@@ -12,7 +12,7 @@ class AdminRepository:
     async def count_users(self, verified_only: bool = False) -> int:
         stmt = select(func.count()).select_from(User)
         if verified_only:
-            stmt = stmt.where(User.is_verified == True)
+            stmt = stmt.where(User.is_verified)
         result = await self.session.execute(stmt)
         return result.scalar_one()
 

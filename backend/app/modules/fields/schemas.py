@@ -1,5 +1,5 @@
 import uuid
-from pydantic import Field, field_validator
+from pydantic import Field
 from app.common.schemas import BaseSchema, IDSchema, TimestampSchema
 from app.common.enums import FieldType
 

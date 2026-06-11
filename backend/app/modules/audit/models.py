@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import JSON, ForeignKey, Enum, UUID, Index
+from sqlalchemy import ForeignKey, Enum, UUID, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from app.common.models import UUIDMixin, TimestampMixin
 from app.common.enums import AuditActorType, AuditEventType

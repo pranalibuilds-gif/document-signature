@@ -1,8 +1,6 @@
 import uuid
 from typing import List
-from datetime import datetime
 from pydantic import BaseModel, Field
-from app.common.schemas import BaseSchema, IDSchema, TimestampSchema
 from app.modules.documents.schemas import DocumentRead
 from app.modules.signers.schemas import SignerRead
 from app.modules.fields.schemas import SignatureFieldRead

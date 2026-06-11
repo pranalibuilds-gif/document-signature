@@ -9,7 +9,7 @@ async def test_connection():
             result = await conn.execute(text("SELECT 1"))
             print(f"Connection successful! Result: {result.fetchone()}")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionLocal():
             print("Session creation successful!")
 
     except Exception as e:

@@ -1,14 +1,12 @@
 import os
 import uuid
 import io
-from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 from pypdf import PdfReader, PdfWriter
 
-from app.modules.documents.models import Document, DocumentFile
+from app.modules.documents.models import DocumentFile
 from app.modules.documents.repository import DocumentRepository
 from app.modules.signers.repository import SignerRepository
 from app.modules.fields.repository import SignatureFieldRepository
@@ -38,7 +36,7 @@ class PdfGenerationService:
             return existing_final
 
         # 2. Fetch all required data
-        document = await self.doc_repo.get_by_id(document_id)
+        await self.doc_repo.get_by_id(document_id)
         original_file = await self.doc_repo.get_original_file(document_id)
         if not original_file:
             return None

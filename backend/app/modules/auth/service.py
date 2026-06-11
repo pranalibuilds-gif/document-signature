@@ -9,10 +9,10 @@ from app.modules.users.models import User
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.repository import AuthRepository, EmailVerificationRepository
 from app.modules.auth.models import RefreshToken, EmailVerificationToken
-from app.modules.auth.schemas import LoginRequest, TokenResponse, VerifyEmailRequest
+from app.modules.auth.schemas import LoginRequest, TokenResponse
 from app.modules.audit.service import AuditService
 from app.modules.notifications.service import NotificationService
-from app.common.enums import AuditActorType, AuditEventType, NotificationType
+from app.common.enums import AuditActorType, AuditEventType
 from app.core.security.hashing import hash_password, verify_password
 from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.core.config import settings

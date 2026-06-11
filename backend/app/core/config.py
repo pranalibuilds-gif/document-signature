@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal
+from typing import Optional, Literal
 import logging
 from pydantic import field_validator, computed_field, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict

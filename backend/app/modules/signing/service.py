@@ -1,16 +1,14 @@
-import uuid
 import hashlib
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.modules.signing.models import FieldValue
 from app.modules.signing.repository import SigningRepository
 from app.modules.signing.schemas import SigningSubmission, RejectionRequest
 from app.modules.signers.repository import SignerRepository
-from app.modules.signers.models import SigningToken, DocumentSigner
+from app.modules.signers.models import SigningToken
 from app.modules.documents.service import DocumentService
 from app.modules.documents.repository import DocumentRepository
 from app.modules.fields.repository import SignatureFieldRepository
@@ -94,7 +92,8 @@ class SigningService:
         # 3. Value-specific validation (Basic)
         for field in assigned_fields:
             val = submitted_values.get(field.id)
-            if not val: continue
+            if not val:
+                continue
 
             if field.field_type == FieldType.DATE:
                 try:
