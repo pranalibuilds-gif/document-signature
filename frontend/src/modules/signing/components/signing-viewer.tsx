@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Document, Page, pdfjs } from "react-pdf"
 import { Loader2 } from "lucide-react"
 import { useSigningStore } from "@/store/use-signing-store"
@@ -14,13 +14,29 @@ interface SigningViewerProps {
 
 export function SigningViewer({ fileUrl }: SigningViewerProps) {
   const [numPages, setNumPages] = useState<number>(0)
+  const [containerWidth, setContainerWidth] = useState<number>(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages)
   }
 
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        // Subtract padding/margins
+        const width = containerRef.current.clientWidth - 32
+        setContainerWidth(Math.min(width, 1000)) // Max width for readability
+      }
+    }
+
+    updateWidth()
+    window.addEventListener("resize", updateWidth)
+    return () => window.removeEventListener("resize", updateWidth)
+  }, [])
+
   return (
-    <div className="flex flex-col items-center gap-8 py-8 w-full max-w-4xl mx-auto">
+    <div ref={containerRef} className="flex flex-col items-center gap-8 py-4 md:py-8 w-full max-w-5xl mx-auto px-4">
       <Document
         file={fileUrl}
         onLoadSuccess={onDocumentLoadSuccess}
@@ -32,16 +48,16 @@ export function SigningViewer({ fileUrl }: SigningViewerProps) {
         className="flex flex-col items-center gap-8"
       >
         {Array.from(new Array(numPages), (el, index) => (
-          <div key={`page_${index + 1}`} className="relative shadow-2xl border bg-white">
+          <div key={`page_${index + 1}`} className="relative shadow-2xl border bg-white rounded-sm overflow-hidden">
             <Page
               pageNumber={index + 1}
-              scale={1.2}
+              width={containerWidth || 300}
               renderAnnotationLayer={false}
               renderTextLayer={false}
             />
             <SigningFieldOverlay pageNumber={index + 1} />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium bg-white/80 px-2 py-0.5 rounded-full border">
-               PAGE {index + 1} OF {numPages}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] text-muted-foreground font-bold bg-white/90 px-2 py-0.5 rounded-full border shadow-sm pointer-events-none">
+               {index + 1} / {numPages}
             </div>
           </div>
         ))}

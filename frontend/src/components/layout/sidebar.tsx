@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Users,
   LogOut,
-  PenTool
+  PenTool,
+  X
 } from "lucide-react"
 
 const navigation = [
@@ -24,12 +25,12 @@ const adminNavigation = [
   { name: "Admin Panel", href: "/admin", icon: ShieldCheck },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="flex h-16 items-center px-6">
+    <div className="flex h-full w-full flex-col border-r bg-card relative">
+      <div className="flex h-16 items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
           <div className="rounded-lg bg-accent p-1.5 text-accent-foreground">
             <PenTool size={20} />
@@ -38,6 +39,12 @@ export function Sidebar() {
             DocuSign <span className="text-accent">Mini</span>
           </span>
         </Link>
+        <button
+          onClick={onClose}
+          className="lg:hidden p-2 -mr-2 text-muted-foreground hover:text-foreground"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -47,6 +54,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive

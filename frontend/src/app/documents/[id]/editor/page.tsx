@@ -207,7 +207,7 @@ export default function DocumentEditorPage() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar: Palette */}
-          <aside className="w-72 border-r bg-card p-4 space-y-6 flex flex-col shrink-0">
+          <aside className="w-64 lg:w-72 border-r bg-card p-4 space-y-6 flex flex-col shrink-0 overflow-y-auto hidden md:flex">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
                 1. Select Signer
@@ -273,7 +273,7 @@ export default function DocumentEditorPage() {
           </main>
 
           {/* Right Sidebar: Field Details */}
-          <aside className="w-64 border-l bg-card p-4 shrink-0">
+          <aside className="w-64 border-l bg-card p-4 shrink-0 hidden lg:block overflow-y-auto">
              <div className="space-y-6">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
                   Field Properties

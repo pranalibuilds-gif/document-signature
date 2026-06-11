@@ -54,6 +54,7 @@ export function SigningFieldItem({ field }: SigningFieldItemProps) {
   return (
     <>
       <div
+        id={`field-${field.id}`}
         className={cn(
           "absolute pointer-events-auto cursor-pointer flex flex-col items-center justify-center border-2 transition-all",
           isCompleted
