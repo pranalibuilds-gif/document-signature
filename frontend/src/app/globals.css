@@ -30,9 +30,16 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+@layer utilities {
+  .font-signature-dancing { font-family: var(--font-dancing); }
+  .font-signature-vibes { font-family: var(--font-vibes); }
+  .font-signature-pinyon { font-family: var(--font-pinyon); }
+  .font-signature-cormorant { font-family: var(--font-cormorant); }
 }
 
 @layer components {

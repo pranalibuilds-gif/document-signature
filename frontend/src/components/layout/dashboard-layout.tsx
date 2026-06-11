@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "./sidebar"
 import { Topbar } from "./topbar"
 import { cn } from "@/lib/utils"
+import { VerificationBanner } from "@/components/auth/verification-banner"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -28,6 +29,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <VerificationBanner />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

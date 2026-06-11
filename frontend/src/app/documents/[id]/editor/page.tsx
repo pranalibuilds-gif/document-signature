@@ -39,6 +39,18 @@ export default function DocumentEditorPage() {
   } = useEditorStore()
 
   const selectedField = fields.find(f => f.id === selectedFieldId)
+  const hasUnsavedChanges = fields.some(f => f.id.startsWith("temp_"))
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ""
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [hasUnsavedChanges])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -162,7 +174,18 @@ export default function DocumentEditorPage() {
             <div className="h-6 w-[1px] bg-border" />
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-primary leading-none">{document?.title}</span>
-              <span className="text-[10px] text-muted-foreground mt-0.5">DRAFT MODE</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">DRAFT MODE</span>
+                {hasUnsavedChanges && (
+                  <>
+                    <span className="text-[10px] text-muted-foreground/30">•</span>
+                    <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold uppercase tracking-wider animate-pulse">
+                      <div className="w-1 h-1 rounded-full bg-amber-600" />
+                      Unsaved Changes
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

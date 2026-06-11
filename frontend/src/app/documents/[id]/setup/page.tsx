@@ -110,25 +110,39 @@ export default function DocumentSetupPage() {
                       No signers added yet
                     </div>
                   ) : (
-                    signers.map((signer) => (
-                      <div
-                        key={signer.id}
-                        className="flex items-center justify-between p-4 rounded-xl border bg-stone-50/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-white border">
-                            <Mail size={16} className="text-muted-foreground" />
-                          </div>
-                          <span className="text-sm font-medium text-primary">{signer.email}</span>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveSigner(signer.id)}
-                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                    <>
+                      {signers.map((signer) => (
+                        <div
+                          key={signer.id}
+                          className="flex items-center justify-between p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-all group border-stone-200/60"
                         >
-                          <Trash2 size={18} />
-                        </button>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 rounded-full bg-stone-100 border text-stone-500 group-hover:bg-accent/10 group-hover:text-accent transition-colors shrink-0">
+                              <Mail size={16} />
+                            </div>
+                            <span className="text-sm font-medium text-primary truncate">{signer.email}</span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveSigner(signer.id)}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      ))}
+
+                      <div className="mt-6 p-4 rounded-xl bg-accent/5 border border-accent/10 flex items-start gap-3 shadow-sm">
+                        <div className="p-1 rounded-md bg-accent text-accent-foreground mt-0.5 shadow-sm">
+                          <Plus size={14} />
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <p className="text-sm font-semibold text-primary">All signers added?</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            The next step is to place signature and text fields on your document in the interactive editor.
+                          </p>
+                        </div>
                       </div>
-                    ))
+                    </>
                   )}
                 </div>
               </CardContent>

@@ -15,10 +15,10 @@ interface SignatureModalProps {
 }
 
 const FONT_STYLES = [
-  { name: "Serif", class: "font-serif italic" },
-  { name: "Cursive", class: "font-serif tracking-tight font-light italic" }, // Mock cursive with serif
-  { name: "Modern", class: "font-sans font-medium italic" },
-  { name: "Elegant", class: "font-serif font-extralight tracking-widest italic" },
+  { name: "Cursive", class: "font-signature-dancing" },
+  { name: "Elegant", class: "font-signature-vibes" },
+  { name: "Classic", class: "font-signature-pinyon" },
+  { name: "Serif", class: "font-signature-cormorant" },
 ]
 
 export function SignatureModal({ isOpen, onClose, onConfirm, initialName = "" }: SignatureModalProps) {

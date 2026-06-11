@@ -28,13 +28,16 @@ export default function SigningSuccessPage() {
           <p className="text-sm text-muted-foreground">
             The document owner has been notified. Once all signers have completed the workflow, you will receive a copy of the finalized PDF via email.
           </p>
+          <div className="p-4 rounded-xl bg-stone-100/50 border text-xs text-stone-500 italic">
+            "This signing session is now recorded in the audit trail. You can safely exit this page."
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           <Button variant="outline" className="w-full" onClick={() => window.close()}>
-            You can close this window
+            Try to Close Tab
           </Button>
-          <Button variant="ghost" className="w-full text-xs" onClick={() => router.push("/")}>
-            Learn more about DocuSign Mini
+          <Button variant="secondary" className="w-full" onClick={() => router.push("/")}>
+            Go to Homepage
           </Button>
         </CardFooter>
       </Card>

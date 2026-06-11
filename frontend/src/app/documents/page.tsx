@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DocumentStatusBadge } from "@/components/documents/document-status-badge"
-import { FileText, Plus, Search, Filter, Calendar, Users, ChevronRight } from "lucide-react"
+import { FileText, Plus, Search, Filter, Calendar, Users, ChevronRight, FileDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import api from "@/lib/api"
 
@@ -122,7 +122,23 @@ export default function DocumentsPage() {
                             </div>
                           </div>
                         </div>
-                        <ChevronRight size={20} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                        <div className="flex items-center gap-4">
+                          {doc.status === 'COMPLETED' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 px-4 text-xs font-bold"
+                              asChild
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <a href={`/api/v1/documents/${doc.id}/final-file`} download>
+                                <FileDown size={16} className="mr-2" />
+                                Download Final PDF
+                              </a>
+                            </Button>
+                          )}
+                          <ChevronRight size={20} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  FileDown
 } from "lucide-react"
 import { useAuthStore } from "@/store/use-auth-store"
 import api from "@/lib/api"
@@ -128,9 +129,24 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
                         <DocumentStatusBadge status={doc.status} />
-                        <ChevronRight size={16} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                        {doc.status === 'COMPLETED' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-[10px] font-bold uppercase tracking-tight"
+                            asChild
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <a href={`/api/v1/documents/${doc.id}/final-file`} download>
+                              <FileDown size={14} className="mr-1" />
+                              Download
+                            </a>
+                          </Button>
+                        ) : (
+                          <ChevronRight size={16} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all shrink-0" />
+                        )}
                       </div>
                     </div>
                   </Link>
