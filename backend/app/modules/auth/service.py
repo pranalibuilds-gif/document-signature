@@ -1,3 +1,7 @@
+"""
+Service layer for Authentication and User management.
+Handles registration, login, password resets, and email verification.
+"""
 import hashlib
 import secrets
 from datetime import datetime, timezone, timedelta
@@ -20,6 +24,7 @@ from app.core.logging import logger
 
 class AuthService:
     def __init__(self, session: AsyncSession):
+        """Initializes repositories and dependent services."""
         self.session = session
         self.user_repo = UserRepository(session)
         self.auth_repo = AuthRepository(session)
@@ -29,9 +34,14 @@ class AuthService:
         self.notification_service = NotificationService(session)
 
     def _hash_token(self, token: str) -> str:
+        """Helper to create a secure hash of raw tokens before storing in DB."""
         return hashlib.sha256(token.encode()).hexdigest()
 
     async def register(self, user_in: UserCreate) -> User:
+        """
+        Creates a new user account.
+        Checks for email duplicates, hashes the password, and creates a verification token.
+        """
         existing_user = await self.user_repo.get_by_email(user_in.email)
         if existing_user:
             raise HTTPException(
@@ -45,10 +55,12 @@ class AuthService:
             hashed_password=hashed_pw,
             first_name=user_in.first_name,
             last_name=user_in.last_name,
+            role=user_in.role
         )
         created_user = await self.user_repo.create(user)
         logger.info(f"User registered successfully: {created_user.email}")
 
+        # Log the security event
         await self.audit_service.record_event(
             event_type=AuditEventType.USER_REGISTERED,
             actor_type=AuditActorType.USER,
@@ -56,7 +68,7 @@ class AuthService:
             event_data={"email": created_user.email}
         )
 
-        # Generate verification token
+        # Prepare email verification link
         raw_token = secrets.token_urlsafe(32)
         token_hash = self._hash_token(raw_token)
         expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_EXPIRY_HOURS)
@@ -68,12 +80,14 @@ class AuthService:
         )
         await self.verification_repo.create(db_token)
 
-        # Attach raw token temporarily for router to send email
+        # raw_token is not saved in DB, only the hash is.
+        # We attach it to the object temporarily so the router can send it in an email.
         created_user._verification_token = raw_token
 
         return created_user
 
     async def verify_email(self, token_str: str) -> None:
+        """Validates an email verification token and marks the user as verified."""
         token_hash = self._hash_token(token_str)
         db_token = await self.verification_repo.get_by_hash(token_hash)
 
@@ -89,7 +103,7 @@ class AuthService:
 
         if not user.is_verified:
             user.is_verified = True
-            await self.session.flush()
+            await self.session.flush() # Persist change to user
             logger.info(f"Email verified for user: {user.email}")
 
             await self.audit_service.record_event(
@@ -98,13 +112,15 @@ class AuthService:
                 user_id=user.id
             )
 
-        db_token.used_at = datetime.now(timezone.utc)
+        db_token.used_at = datetime.now(timezone.utc) # Burn the token
 
     async def forgot_password(self, email: str) -> str:
+        """Starts the password reset flow. Returns a raw token if user exists."""
         user = await self.user_repo.get_by_email(email)
         if not user:
-            return "" # Silent fail for security
+            return "" # Return empty to prevent user enumeration attacks
 
+        # Invalidate any existing active reset tokens for this user
         await self.password_reset_repo.invalidate_user_tokens(user.id)
 
         raw_token = secrets.token_urlsafe(32)
@@ -120,6 +136,7 @@ class AuthService:
         return raw_token
 
     async def reset_password(self, token_str: str, new_password: str) -> None:
+        """Validates a reset token and updates the user's password."""
         token_hash = self._hash_token(token_str)
         db_token = await self.password_reset_repo.get_by_hash(token_hash)
 
@@ -144,13 +161,12 @@ class AuthService:
         )
 
     async def resend_verification(self, user: User) -> str:
+        """Generates a new verification token for an unverified user."""
         if user.is_verified:
-            return "" # Already verified, idempotency
+            return ""
 
-        # Invalidate old tokens
         await self.verification_repo.invalidate_user_tokens(user.id)
 
-        # Create new token
         raw_token = secrets.token_urlsafe(32)
         token_hash = self._hash_token(raw_token)
         expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_EXPIRY_HOURS)
@@ -172,6 +188,7 @@ class AuthService:
         return raw_token
 
     async def login(self, login_data: LoginRequest) -> TokenResponse:
+        """Authenticates user credentials and returns a new Access/Refresh token pair."""
         user = await self.user_repo.get_by_email(login_data.email)
         if not user or not verify_password(login_data.password, user.hashed_password):
             logger.warning(f"Failed login attempt for email: {login_data.email}")
@@ -199,6 +216,7 @@ class AuthService:
         return token_pair
 
     async def refresh(self, refresh_token_str: str) -> TokenResponse:
+        """Rotates an existing refresh token for a new token pair."""
         payload = decode_token(refresh_token_str)
         if not payload or payload.get("type") != "refresh":
             raise HTTPException(
@@ -222,22 +240,24 @@ class AuthService:
                 detail="User not found or inactive",
             )
 
-        # Rotate: revoke old one
+        # Token Rotation: Revoke the old token immediately
         await self.auth_repo.revoke_refresh_token(db_token.id)
 
+        # Issue a brand new pair
         return await self._create_token_pair(user)
 
     async def logout(self, refresh_token_str: str) -> None:
+        """Revokes a refresh token to end a user session."""
         token_hash = self._hash_token(refresh_token_str)
         db_token = await self.auth_repo.get_refresh_token_by_hash(token_hash)
         if db_token:
             await self.auth_repo.revoke_refresh_token(db_token.id)
 
     async def _create_token_pair(self, user: User) -> TokenResponse:
+        """Generates access and refresh tokens and stores the refresh token hash."""
         access_token = create_access_token(subject=user.id)
         refresh_token = create_refresh_token(subject=user.id)
 
-        # Store refresh token hash
         token_hash = self._hash_token(refresh_token)
         expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 

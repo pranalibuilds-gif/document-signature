@@ -82,11 +82,15 @@ class PdfGenerationService:
                     if not val:
                         continue
 
-                    # ReportLab origin is bottom-left
-                    # PDF coordinates usually follow this too, but we need to verify
-                    # If x,y in our DB is from top-left, we need to flip y.
-                    # Standard in these mini-docusigns is often x,y from bottom-left (PDF style)
-                    # or top-left (Web style). Let's assume bottom-left for now as per "absolute PDF coordinates".
+                    # --- COORDINATE CONVERSION ---
+                    # 1. DB stores % (0-100) from top-left.
+                    # 2. ReportLab needs absolute points from bottom-left.
+
+                    abs_x = (f.x_coordinate / 100.0) * width
+
+                    # Flip Y: 100% from top is 0 points from bottom.
+                    # 0% from top is [height] points from bottom.
+                    abs_y = height - ((f.y_coordinate / 100.0) * height)
 
                     text = val
                     if f.field_type == FieldType.SIGNATURE:
@@ -95,7 +99,8 @@ class PdfGenerationService:
                     else:
                         can.setFont("Helvetica", 10)
 
-                    can.drawString(f.x_coordinate, f.y_coordinate, text)
+                    # Draw text at calculated absolute coordinates
+                    can.drawString(abs_x, abs_y, text)
 
                 can.save()
                 packet.seek(0)

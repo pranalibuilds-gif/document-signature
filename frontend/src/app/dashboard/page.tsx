@@ -23,19 +23,30 @@ import { useAuthStore } from "@/store/use-auth-store"
 import api from "@/lib/api"
 import { DocumentStatusBadge } from "@/components/documents/document-status-badge"
 
+/**
+ * DashboardPage Component
+ * Provides a high-level overview of the user's documents and system activity.
+ * Displays aggregate statistics and a list of the most recent documents.
+ */
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const [stats, setStats] = useState<any[]>([])
   const [recentDocs, setRecentDocs] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
+  /**
+   * Data Fetching
+   * Fetches latest documents and calculates statistics for the summary cards.
+   */
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Fetch last 5 documents for the 'Recent' list
         const res = await api.get("/documents?limit=5")
         const docs = res.data
         setRecentDocs(docs)
 
+        // Calculate summary metrics based on status
         const completed = docs.filter((d: any) => d.status === 'COMPLETED').length
         const pending = docs.filter((d: any) => d.status === 'PENDING' || d.status === 'PARTIALLY_SIGNED').length
         const needsAttention = docs.filter((d: any) => d.status === 'REJECTED' || d.status === 'EXPIRED').length
@@ -116,7 +127,10 @@ export default function DashboardPage() {
             ) : (
               <div className="grid gap-3">
                 {recentDocs.map(doc => (
-                  <Link key={doc.id} href={`/documents/${doc.id}/${doc.status === 'DRAFT' ? 'setup' : 'editor'}`}>
+                  <Link
+                    key={doc.id}
+                    href={doc.status === 'DRAFT' ? `/documents/${doc.id}/setup` : `/documents/${doc.id}`}
+                  >
                     <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-card hover:border-accent/40 transition-all group">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-lg bg-stone-100 text-stone-500 group-hover:bg-accent/5 group-hover:text-accent">

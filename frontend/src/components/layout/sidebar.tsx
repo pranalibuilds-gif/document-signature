@@ -11,7 +11,8 @@ import {
   Users,
   LogOut,
   PenTool,
-  X
+  X,
+  History
 } from "lucide-react"
 
 const navigation = [

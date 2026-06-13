@@ -1,3 +1,7 @@
+"""
+API endpoints for managing documents.
+Handles creation, PDF uploads, activation, and status tracking.
+"""
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +10,9 @@ from app.modules.users.models import User
 from app.modules.documents.service import DocumentService
 from app.modules.documents.schemas import DocumentCreate, DocumentUpdate, DocumentRead
 from app.utils.storage import StorageService
+from app.modules.audit.schemas import AuditLogRead
+from app.modules.audit.repository import AuditRepository
+import uuid
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -15,6 +22,7 @@ async def create_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Creates a new document entry in DRAFT state."""
     service = DocumentService(db)
     document = await service.create_document(current_user.id, doc_in)
     await db.commit()
@@ -27,12 +35,16 @@ async def upload_document_file(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Uploads the physical PDF file for a document.
+    Replaces any existing file and handles storage logic.
+    """
     import uuid
     service = DocumentService(db)
     doc_file = await service.upload_file(uuid.UUID(document_id), current_user.id, file)
     await db.commit()
 
-    # Post-commit cleanup of old physical file
+    # If this was a replacement, delete the old file from disk
     if hasattr(doc_file, "_old_path_to_delete"):
         StorageService().delete_file(doc_file._old_path_to_delete)
 
@@ -44,6 +56,7 @@ async def download_document_file(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Returns the original uploaded PDF for viewing in the editor."""
     import uuid
     service = DocumentService(db)
     file_path = await service.get_document_file_path(uuid.UUID(document_id), current_user.id)
@@ -55,6 +68,7 @@ async def download_final_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Returns the generated PDF containing all captured signatures."""
     import uuid
     from fastapi import HTTPException
     from app.common.enums import DocumentStatus
@@ -77,27 +91,29 @@ async def activate_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Transitions document from DRAFT to PENDING.
+    Generates secure signing links and notifies all assigned signers.
+    """
     import uuid
     from app.common.enums import NotificationType
     service = DocumentService(db)
     doc_id = uuid.UUID(document_id)
 
-    # 1. Activate (DB Changes)
-    # We need the document object to get invitation data
+    # Fetch document first to ensure existence
     document = await service.repo.get_by_id(doc_id)
     if not document:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Document not found")
 
+    # 1. Update state in database
     await service.activate_document(doc_id, current_user.id)
     await db.commit()
 
-    # 2. Send Notifications (Post-Commit)
-    # Note: Service attached _invitation_data to the document instance
+    # 2. Post-commit: Send out the invitation emails
     if hasattr(document, "_invitation_data"):
         for signer, raw_token in document._invitation_data:
-            # Construct link (Base URL would normally come from config)
-            link = f"http://localhost:3000/signing/{raw_token}"
+            link = f"http://localhost:3000/signing/{raw_token}/welcome"
             await service.notification_service.send_notification(
                 recipient_email=signer.email,
                 subject=f"Signature Required: {document.title}",
@@ -108,6 +124,22 @@ async def activate_document(
 
     return {"message": "Document activated and invitations sent"}
 
+@router.get("/{document_id}/audit", response_model=list[AuditLogRead])
+async def get_document_audit(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Returns the audit trail for a specific document, accessible to the owner."""
+    service = DocumentService(db)
+    doc_id = uuid.UUID(document_id)
+
+    # Check ownership
+    await service.get_document(doc_id, current_user.id)
+
+    repo = AuditRepository(db)
+    return await repo.list_by_document(doc_id)
+
 @router.get("", response_model=list[DocumentRead])
 async def list_documents(
     skip: int = 0,
@@ -115,6 +147,7 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Lists all documents owned by the current user."""
     service = DocumentService(db)
     return await service.list_documents(current_user.id, skip, limit)
 
@@ -124,6 +157,7 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Fetches full metadata for a specific document."""
     import uuid
     service = DocumentService(db)
     return await service.get_document(uuid.UUID(document_id), current_user.id)
@@ -135,6 +169,7 @@ async def update_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Updates document metadata (e.g., title)."""
     import uuid
     service = DocumentService(db)
     document = await service.update_document(uuid.UUID(document_id), current_user.id, doc_in)
@@ -147,6 +182,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Performs a soft-delete of a document."""
     import uuid
     service = DocumentService(db)
     await service.delete_document(uuid.UUID(document_id), current_user.id)

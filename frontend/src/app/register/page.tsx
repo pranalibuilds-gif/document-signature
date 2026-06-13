@@ -12,6 +12,7 @@ import { PenTool, Loader2 } from "lucide-react"
 import api from "@/lib/api"
 
 export default function RegisterPage() {
+  const [regRole, setRegRole] = useState<"USER" | "ADMIN">("USER")
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,7 +29,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      await api.post("/auth/register", formData)
+      await api.post("/auth/register", { ...formData, role: regRole })
       router.push("/login?registered=true")
     } catch (err: any) {
       const detail = err.response?.data?.detail
@@ -49,7 +50,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center text-center">
           <div className="rounded-xl bg-accent p-3 text-accent-foreground mb-4">
@@ -59,12 +60,34 @@ export default function RegisterPage() {
           <p className="text-muted-foreground mt-2">Create your account to start signing documents</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg">
+        <Card className="border-border/50 shadow-lg overflow-hidden">
+          <div className="flex border-b">
+            <button
+              type="button"
+              onClick={() => setRegRole("USER")}
+              className={cn(
+                "flex-1 py-3 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                regRole === "USER" ? "bg-accent/5 text-accent border-b-2 border-accent" : "text-muted-foreground hover:bg-stone-50"
+              )}
+            >
+              Signer Account
+            </button>
+            <button
+              type="button"
+              onClick={() => setRegRole("ADMIN")}
+              className={cn(
+                "flex-1 py-3 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                regRole === "ADMIN" ? "bg-primary/5 text-primary border-b-2 border-primary" : "text-muted-foreground hover:bg-stone-50"
+              )}
+            >
+              Admin Account
+            </button>
+          </div>
           <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-1">
               <CardTitle className="text-xl">Create Account</CardTitle>
               <CardDescription>
-                Enter your details below to create your account
+                Enter your details to register as a {regRole === "ADMIN" ? "system admin" : "document signer"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

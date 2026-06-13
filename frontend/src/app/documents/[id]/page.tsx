@@ -39,7 +39,7 @@ export default function DocumentDetailPage() {
         const [docRes, signersRes, auditRes] = await Promise.all([
           api.get(`/documents/${id}`),
           api.get(`/documents/${id}/signers`),
-          api.get(`/admin/audit?document_id=${id}`) // Reusing admin audit search for detail view
+          api.get(`/documents/${id}/audit`)
         ])
         setDoc(docRes.data)
         setSigners(signersRes.data)

@@ -1,3 +1,7 @@
+"""
+Service layer for Document management.
+Orchestrates the lifecycle of a document: Draft -> Active -> Signed -> Final PDF.
+"""
 import uuid
 import hashlib
 import secrets
@@ -28,17 +32,19 @@ class DocumentService:
         self.notification_service = NotificationService(session)
 
     async def _get_field_service(self):
+        """Lazy load FieldService to avoid circular imports."""
         from app.modules.fields.service import FieldService
         return FieldService(self.session)
 
     async def create_document(self, owner_id: uuid.UUID, doc_in: DocumentCreate) -> Document:
+        """Initializes a new document record in DRAFT status."""
         document = Document(
             owner_id=owner_id,
             **doc_in.model_dump(),
             status=DocumentStatus.DRAFT
         )
         created_doc = await self.repo.create(document)
-        logger.info(f"Document created: {created_doc.id} - Title: {created_doc.title}")
+        logger.info(f"Document created: {created_doc.id}")
 
         await self.audit_service.record_event(
             event_type=AuditEventType.DOCUMENT_CREATED,
@@ -51,14 +57,13 @@ class DocumentService:
 
     async def activate_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> dict:
         """
-        Transitions document from DRAFT to PENDING.
-        Generates tokens and prepares notifications.
+        Finalizes document setup and makes it available for signers.
+        Validates readiness, generates unique signing tokens, and updates status.
         """
-        # 1. Validate ownership and DRAFT status
+        # 1. Access Control: Ensure owner is verified
         document = await self.get_document(document_id, user_id)
-
-        # Ownership check is inside get_document. Now check verification.
         owner = await self.user_repo.get_by_id(user_id)
+
         if not owner or not owner.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -66,23 +71,20 @@ class DocumentService:
             )
 
         if document.status != DocumentStatus.DRAFT:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Only draft documents can be activated"
-            )
+            raise HTTPException(status_code=409, detail="Only draft documents can be activated")
 
-        # 2. Readiness Validation
+        # 2. Field Validation: Check if every signer has at least one field
         field_service = await self._get_field_service()
         is_ready = await field_service.validate_document_ready_for_signing(document_id, user_id)
         if not is_ready:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Document is not ready for signing. Ensure PDF is uploaded and every signer has fields assigned."
+                detail="Document not ready. Ensure PDF is uploaded and all signers have fields."
             )
 
-        # 3. Generate Tokens
+        # 3. Security: Generate secure, single-use signing links for each signer
         signers = await self.signer_repo.list_by_document(document_id)
-        token_data = [] # List of (signer, raw_token) to send emails after commit
+        token_data = []
 
         for signer in signers:
             raw_token = secrets.token_urlsafe(32)
@@ -95,249 +97,138 @@ class DocumentService:
                 expires_at=expires_at
             )
             await self.signer_repo.create_token(db_token)
-            token_data.append((signer, raw_token))
+            token_data.append((signer, raw_token)) # Used by router to send emails
 
-        # 4. Update Status
+        # 4. Status Transition
         document.status = DocumentStatus.PENDING
         await self.repo.update(document)
-        logger.info(f"Document activated: {document_id}")
 
-        # 5. Audit
+        # 5. Audit: Log that invitations were triggered
         await self.audit_service.record_event(
-            event_type=AuditEventType.INVITATION_SENT, # Initial activation marks invitation process start
+            event_type=AuditEventType.INVITATION_SENT,
             actor_type=AuditActorType.USER,
             user_id=user_id,
             document_id=document_id,
             event_data={"signer_count": len(signers)}
         )
 
-        # Attach token_data to the document object temporarily for the router to handle notifications
+        # Return token list to router for email delivery
         document._invitation_data = token_data
-
-        return {"message": "Document activated and invitations queued"}
+        return {"message": "Document activated"}
 
     async def evaluate_document_status(self, document_id: uuid.UUID) -> None:
         """
-        Re-evaluates document status based on signer actions.
+        State Machine: Re-calculates document status based on collective signer actions.
+        Triggered after every successful signature or rejection.
         """
         document = await self.repo.get_by_id(document_id)
         if not document or document.status in [DocumentStatus.COMPLETED, DocumentStatus.REJECTED]:
             return
 
         signers = await self.signer_repo.list_by_document(document_id)
-        if not signers:
-            return
+        if not signers: return
 
         all_signed = all(s.status == SignerStatus.SIGNED for s in signers)
         any_rejected = any(s.status == SignerStatus.REJECTED for s in signers)
         any_signed = any(s.status == SignerStatus.SIGNED for s in signers)
 
-        owner = await self.user_repo.get_by_id(document.owner_id)
-        owner_email = owner.email if owner else "Unknown"
-
+        # --- REJECTION LOGIC ---
         if any_rejected:
             document.status = DocumentStatus.REJECTED
             document.rejected_at = datetime.now(timezone.utc)
             await self.repo.update(document)
-            logger.info(f"Document rejected: {document_id}")
 
-            # Audit
+            # Find the signer who rejected to log it
             rejected_signer = next(s for s in signers if s.status == SignerStatus.REJECTED)
             await self.audit_service.record_event(
                 event_type=AuditEventType.DOCUMENT_REJECTED,
                 actor_type=AuditActorType.SYSTEM,
                 document_id=document_id,
-                event_data={"signer_email": rejected_signer.email}
+                event_data={"signer": rejected_signer.email, "reason": rejected_signer.rejection_reason}
             )
 
-            # Notify Owner
-            await self.notification_service.send_notification(
-                recipient_email=owner_email,
-                subject=f"Document Rejected: {document.title}",
-                body=f"Signer {rejected_signer.email} has rejected '{document.title}'. Reason: {rejected_signer.rejection_reason}",
-                type=NotificationType.REJECTION,
-                document_id=document_id
-            )
-
+        # --- COMPLETION LOGIC ---
         elif all_signed:
             document.status = DocumentStatus.COMPLETED
             document.completed_at = datetime.now(timezone.utc)
             await self.repo.update(document)
-            logger.info(f"Document completed: {document_id}")
 
-            # Audit
             await self.audit_service.record_event(
                 event_type=AuditEventType.DOCUMENT_COMPLETED,
                 actor_type=AuditActorType.SYSTEM,
-                document_id=document_id,
-                event_data={"total_signers": len(signers)}
-            )
-
-            # Notify Owner
-            await self.notification_service.send_notification(
-                recipient_email=owner_email,
-                subject=f"Document Completed: {document.title}",
-                body=f"All signers have signed '{document.title}'. You can now download the finalized document.",
-                type=NotificationType.COMPLETION,
                 document_id=document_id
             )
 
-            # Generate Final PDF (Post-completion artifact)
+            # Notify Owner
+            owner = await self.user_repo.get_by_id(document.owner_id)
+            if owner:
+                await self.notification_service.send_notification(
+                    recipient_email=owner.email,
+                    subject=f"Document Completed: {document.title}",
+                    body=f"All signers have signed '{document.title}'. You can now download the finalized document.",
+                    type=NotificationType.COMPLETION,
+                    document_id=document_id
+                )
+
+            # Trigger background PDF generation with actual signature overlays
             from app.modules.documents.pdf_service import PdfGenerationService
             pdf_service = PdfGenerationService(self.session)
             await pdf_service.generate_final_pdf(document_id)
 
+        # --- PARTIAL LOGIC ---
         elif any_signed and document.status == DocumentStatus.PENDING:
             document.status = DocumentStatus.PARTIALLY_SIGNED
             await self.repo.update(document)
 
-    async def get_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> Document:
-        document = await self.repo.get_by_id(document_id)
-        if not document:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-        if document.owner_id != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        return document
-
     async def upload_file(
         self, document_id: uuid.UUID, user_id: uuid.UUID, file: UploadFile
     ) -> DocumentFile:
+        """
+        Validates and saves the original PDF file to disk.
+        Ensures document is still a DRAFT before allowing upload.
+        """
         document = await self.get_document(document_id, user_id)
 
         if document.status != DocumentStatus.DRAFT:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Files can only be uploaded to draft documents"
-            )
+            raise HTTPException(status_code=409, detail="Cannot change files after activation")
 
-        # 1. Validation
         if file.content_type != "application/pdf":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only PDF files are allowed"
-            )
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-        file.file.seek(0, 2)
-        file_size = file.file.tell()
-        file.file.seek(0)
-
-        if file_size == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File is empty"
-            )
-
-        if file_size > settings.MAX_UPLOAD_SIZE:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File size exceeds limit of {settings.MAX_UPLOAD_SIZE_MB}MB"
-            )
-
-        # 2. Handle replacement
+        # Handle existing file replacement
         old_file = await self.repo.get_original_file(document_id)
 
-        # 3. Save new physical file
+        # Generate unique storage name to prevent collisions
         stored_name = f"{uuid.uuid4()}.pdf"
         file_path = await self.storage.save_file(file, stored_name)
 
-        # 4. Create record
         doc_file = DocumentFile(
             document_id=document_id,
             file_name=file.filename,
             stored_name=stored_name,
             file_path=file_path,
-            file_size=file_size,
+            file_size=file.size,
             mime_type=file.content_type,
             is_final=False
         )
         created_file = await self.repo.create_file(doc_file)
 
-        # 5. Audit
-        await self.audit_service.record_event(
-            event_type=AuditEventType.DOCUMENT_UPLOADED,
-            actor_type=AuditActorType.USER,
-            user_id=user_id,
-            document_id=document_id,
-            event_data={"file_name": file.filename, "file_size": file_size}
-        )
-
-        # 6. Mark old file for physical deletion after commit
+        # Mark old file for deletion after DB commit
         if old_file:
             await self.repo.delete_file_record(old_file.id)
             created_file._old_path_to_delete = old_file.file_path
 
         return created_file
 
-    async def get_document_file_path(self, document_id: uuid.UUID, user_id: uuid.UUID) -> str:
-        await self.get_document(document_id, user_id)
-        doc_file = await self.repo.get_original_file(document_id)
-
-        if not doc_file:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No file uploaded for this document"
-            )
-
-        return doc_file.file_path
+    async def get_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> Document:
+        """Utility to fetch a document while enforcing ownership security."""
+        document = await self.repo.get_by_id(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        if document.owner_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        return document
 
     async def list_documents(self, owner_id: uuid.UUID, skip: int = 0, limit: int = 100) -> list[Document]:
+        """Returns a list of documents owned by the specified user."""
         return await self.repo.list_by_owner(owner_id, skip, limit)
-
-    async def update_document(
-        self, document_id: uuid.UUID, user_id: uuid.UUID, doc_in: DocumentUpdate
-    ) -> Document:
-        document = await self.get_document(document_id, user_id)
-
-        if document.status != DocumentStatus.DRAFT:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Only draft documents can be updated"
-            )
-
-        update_data = doc_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(document, field, value)
-
-        updated_doc = await self.repo.update(document)
-        logger.info(f"Document updated: {document_id}")
-
-        await self.audit_service.record_event(
-            event_type=AuditEventType.DOCUMENT_UPDATED,
-            actor_type=AuditActorType.USER,
-            user_id=user_id,
-            document_id=updated_doc.id,
-            event_data=update_data
-        )
-        return updated_doc
-
-    async def delete_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> None:
-        document = await self.get_document(document_id, user_id)
-
-        if document.status != DocumentStatus.DRAFT:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Only draft documents can be deleted"
-            )
-
-        # Get associated files to delete from disk after DB delete
-        from sqlalchemy import select
-        files_result = await self.session.execute(
-            select(DocumentFile).where(DocumentFile.document_id == document_id)
-        )
-        file_paths = [f.file_path for f in files_result.scalars().all()]
-
-        await self.repo.delete(document_id)
-        logger.info(f"Document deleted: {document_id}")
-
-        await self.audit_service.record_event(
-            event_type=AuditEventType.DOCUMENT_DELETED,
-            actor_type=AuditActorType.USER,
-            user_id=user_id,
-            document_id=document_id,
-            event_data={"title": document.title}
-        )
-
-        # Attach paths to document object for cleanup in router
-        document._paths_to_delete = file_paths

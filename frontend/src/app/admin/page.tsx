@@ -16,7 +16,8 @@ import {
   Mail,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from "lucide-react"
 import api from "@/lib/api"
 
@@ -119,10 +120,6 @@ export default function AdminDashboardPage() {
       </DashboardLayout>
     </ProtectedRoute>
   )
-}
-
-function XCircle(props: any) {
-    return <AlertCircle {...props} /> // Fallback for lucide icon import mismatch if any
 }
 
 function HealthItem({ label, status }: { label: string, status: 'active' | 'warning' | 'down' }) {
