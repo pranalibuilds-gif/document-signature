@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { PenTool, Loader2 } from "lucide-react"
 import api from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 export default function RegisterPage() {
   const [regRole, setRegRole] = useState<"USER" | "ADMIN">("USER")

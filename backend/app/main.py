@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.api.api_v1 import api_router
 from app.jobs.scheduler import start_scheduler, stop_scheduler
 from app.core.middleware.request_id import RequestIdMiddleware
+from app.core.middleware.security import SecurityHeadersMiddleware
 from app.core.exceptions import global_exception_handler, http_exception_handler, validation_exception_handler
 from app.core.logging import logger
 from app.core.rate_limit import limiter
@@ -43,6 +44,7 @@ app = FastAPI(
 app.state.limiter = limiter # Attach rate limiter to app state
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(RequestIdMiddleware) # Trace every request with a unique ID
+app.add_middleware(SecurityHeadersMiddleware) # Add hardening security headers
 
 # --- Global Exception Handlers ---
 # Ensures consistent JSON error responses for all failure types

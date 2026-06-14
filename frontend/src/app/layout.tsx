@@ -11,6 +11,15 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: "400", variab
 export const metadata: Metadata = {
   title: "DocuSign Mini | Secure Document Signing",
   description: "A professional-grade document signature platform built with FastAPI and Next.js.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+  openGraph: {
+    title: "DocuSign Mini",
+    description: "Professional document signing workflows.",
+    type: "website",
+    siteName: "DocuSign Mini",
+  }
 };
 
 export default function RootLayout({

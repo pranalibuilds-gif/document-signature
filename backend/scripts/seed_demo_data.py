@@ -57,7 +57,7 @@ def generate_mock_pdf(filename, title):
     c.setFont("Helvetica", 12)
     c.drawString(100, 760, title)
     c.line(100, 755, 500, 755)
-    c.drawString(100, 730, f"Generated on: {datetime.now().strftime('%Y-%m-%d')}")
+    c.drawString(100, 730, f"Generated on: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
     c.drawString(100, 700, "This is a computer-generated document for Northstar internal use.")
     c.save()
 

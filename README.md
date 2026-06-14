@@ -1,6 +1,28 @@
 # DocuSign Mini - Secure Document Signing SaaS
 
+**Built from scratch with zero boilerplate.**
+
 DocuSign Mini is a professional-grade, full-stack document signature platform designed for small to mid-sized organizations. It provides a seamless, secure, and legally-compliant workflow for managing document signatures, from initial creation to final PDF generation.
+
+---
+
+## 🏢 Corporate Demo Environment
+The application comes with a pre-configured corporate dataset simulating **Northstar Technologies Pvt. Ltd.** with over 12 months of organic activity.
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Manager (User)** | `pranali@northstar-tech.com` | `northstar2025` |
+| **System Admin** | `admin@northstar-tech.com` | `admin123` |
+
+### Seeding the Demo Data
+To reset the environment to its verified corporate state:
+```bash
+cd backend
+$env:PYTHONPATH="."
+python scripts/seed_demo_data.py
+```
+
+---
 
 ## 🚀 Key Features
 
