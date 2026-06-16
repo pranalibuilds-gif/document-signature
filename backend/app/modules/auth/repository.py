@@ -35,7 +35,7 @@ class AuthRepository:
         )
 
     async def cleanup_expired_refresh_tokens(self, retention_days: int = 30) -> int:
-        from datetime import datetime, timezone, timedelta
+        from datetime import timedelta
         now = datetime.now(timezone.utc)
         retention_threshold = now - timedelta(days=retention_days)
 
@@ -72,7 +72,7 @@ class PasswordResetRepository:
         )
 
     async def cleanup_expired_tokens(self, retention_days: int = 7) -> int:
-        from datetime import datetime, timezone, timedelta
+        from datetime import timedelta
         now = datetime.now(timezone.utc)
         threshold = now - timedelta(days=retention_days)
 
@@ -109,7 +109,7 @@ class EmailVerificationRepository:
         )
 
     async def cleanup_expired_tokens(self, retention_days: int = 7) -> int:
-        from datetime import datetime, timezone, timedelta
+        from datetime import timedelta
         now = datetime.now(timezone.utc)
         threshold = now - timedelta(days=retention_days)
 
