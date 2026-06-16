@@ -196,6 +196,13 @@ class DocumentService:
         if file.content_type != "application/pdf":
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
+        # TC-7.4.3 Size Limit enforcement
+        if file.size and file.size > settings.MAX_UPLOAD_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File too large. Maximum allowed size is {settings.MAX_UPLOAD_SIZE_MB}MB"
+            )
+
         # Handle existing file replacement
         old_file = await self.repo.get_original_file(document_id)
 
