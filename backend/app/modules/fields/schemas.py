@@ -16,5 +16,15 @@ class SignatureFieldBase(BaseSchema):
 class SignatureFieldCreate(SignatureFieldBase):
     pass
 
+class SignatureFieldUpdate(BaseSchema):
+    assigned_signer_id: uuid.UUID | None = None
+    page_number: int | None = Field(None, ge=1)
+    x_coordinate: float | None = Field(None, ge=0)
+    y_coordinate: float | None = Field(None, ge=0)
+    width: float | None = Field(None, gt=0)
+    height: float | None = Field(None, gt=0)
+    field_type: FieldType | None = None
+    required: bool | None = None
+
 class SignatureFieldRead(SignatureFieldBase, IDSchema, TimestampSchema):
     document_id: uuid.UUID

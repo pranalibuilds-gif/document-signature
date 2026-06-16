@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.fields.models import SignatureField
 from app.modules.fields.repository import SignatureFieldRepository
-from app.modules.fields.schemas import SignatureFieldCreate
+from app.modules.fields.schemas import SignatureFieldCreate, SignatureFieldUpdate
 from app.modules.signers.repository import SignerRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, AuditActorType, AuditEventType
@@ -108,6 +108,57 @@ class FieldService:
                 "page": page_num
             }
         )
+
+    async def update_field(
+        self, document_id: uuid.UUID, user_id: uuid.UUID, field_id: uuid.UUID, field_in: SignatureFieldUpdate
+    ) -> SignatureField:
+        # 1. Validate ownership and DRAFT status
+        document = await self._get_document_checked(document_id, user_id)
+        if document.status != DocumentStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Fields can only be updated on draft documents"
+            )
+
+        # 2. Check if field exists
+        field = await self.repo.get_by_id(field_id)
+        if not field or field.document_id != document_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Field not found in this document"
+            )
+
+        # 3. Apply updates
+        update_data = field_in.model_dump(exclude_unset=True)
+
+        # If changing signer, validate it
+        if "assigned_signer_id" in update_data:
+            new_signer_id = update_data["assigned_signer_id"]
+            signer = await self.signer_repo.get_by_id(new_signer_id)
+            if not signer or signer.document_id != document_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="New signer does not belong to this document"
+                )
+
+        for key, value in update_data.items():
+            setattr(field, key, value)
+
+        updated_field = await self.repo.update(field)
+
+        # 4. Audit
+        await self.audit_service.record_event(
+            event_type=AuditEventType.FIELD_UPDATED,
+            actor_type=AuditActorType.USER,
+            user_id=user_id,
+            document_id=document_id,
+            event_data={
+                "field_id": str(field_id),
+                "field_type": updated_field.field_type
+            }
+        )
+
+        return updated_field
 
     async def list_fields(self, document_id: uuid.UUID, user_id: uuid.UUID) -> list[SignatureField]:
         # Validate ownership

@@ -100,7 +100,15 @@ class PdfGenerationService:
                         can.setFont("Helvetica", 10)
 
                     # Draw text at calculated absolute coordinates
-                    can.drawString(abs_x, abs_y, text)
+                    # To match the frontend's translate(-50%, -50%), we need to center the string
+                    text_width = can.stringWidth(text, "Helvetica", 10)
+                    # Note: Helvetica doesn't have an easy "text height" helper,
+                    # but for 10pt font, 7-8 is roughly the ascender height.
+
+                    centered_x = abs_x - (text_width / 2.0)
+                    centered_y = abs_y - 4 # Roughly half of 10pt line height
+
+                    can.drawString(centered_x, centered_y, text)
 
                 can.save()
                 packet.seek(0)

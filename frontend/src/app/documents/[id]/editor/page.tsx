@@ -110,7 +110,9 @@ export default function DocumentEditorPage() {
     setIsSaving(true)
     try {
       const newFields = fields.filter(f => f.id.startsWith("temp_"))
+      const existingFields = fields.filter(f => !f.id.startsWith("temp_"))
 
+      // 1. Save new fields
       for (const f of newFields) {
         await api.post(`/documents/${id}/fields`, {
           assigned_signer_id: f.signerId,
@@ -121,6 +123,18 @@ export default function DocumentEditorPage() {
           height: f.height,
           field_type: f.type,
           required: true
+        })
+      }
+
+      // 2. Update existing fields (in case they were moved)
+      for (const f of existingFields) {
+        await api.patch(`/documents/${id}/fields/${f.id}`, {
+          x_coordinate: f.x,
+          y_coordinate: f.y,
+          assigned_signer_id: f.signerId,
+          page_number: f.pageNumber,
+          width: f.width,
+          height: f.height
         })
       }
 
