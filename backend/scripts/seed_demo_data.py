@@ -8,13 +8,12 @@ from reportlab.pdfgen import canvas
 
 from app.core.database import AsyncSessionLocal
 from app.core.security.hashing import hash_password
-from app.common.enums import DocumentStatus, SignerStatus, UserRole, AuditActorType, AuditEventType, NotificationType, FieldType
+from app.common.enums import DocumentStatus, SignerStatus, UserRole, AuditActorType, AuditEventType, FieldType
 from app.modules.users.models import User
 from app.modules.documents.models import Document, DocumentFile
-from app.modules.signers.models import DocumentSigner, SigningToken
+from app.modules.signers.models import DocumentSigner
 from app.modules.fields.models import SignatureField
 from app.modules.audit.models import AuditLog
-from app.modules.signing.models import FieldValue
 from app.core.config import settings
 
 COMPANY_NAME = "Northstar Technologies Pvt. Ltd."
@@ -237,8 +236,8 @@ async def seed():
 
         print("\n--- SEED COMPLETE ---")
         print(f"Company: {COMPANY_NAME}")
-        print(f"Manager Login: pranali@northstar-tech.com / northstar2025")
-        print(f"Admin Login: admin@northstar-tech.com / admin123")
+        print("Manager Login: pranali@northstar-tech.com / northstar2025")
+        print("Admin Login: admin@northstar-tech.com / admin123")
         print(f"Stats: {stats}")
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 import asyncio
 from app.core.database import AsyncSessionLocal
-from app.modules.auth.models import EmailVerificationToken
 from sqlalchemy import select
 
 async def run():

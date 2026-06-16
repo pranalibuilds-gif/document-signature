@@ -7,7 +7,7 @@ async def run():
     async with AsyncSessionLocal() as s:
         # Join SigningToken with DocumentSigner to find by email
         q = select(SigningToken.token_hash, DocumentSigner.email).join(DocumentSigner).where(DocumentSigner.email == 'signer@example.com')
-        r = await s.execute(q)
+        await s.execute(q)
         # Note: token_hash is stored, raw token is not.
         # I'll need to check notifications or audit logs for the RAW token.
         from app.modules.notifications.models import Notification

@@ -3,7 +3,6 @@ from app.core.database import AsyncSessionLocal
 from app.modules.documents.models import Document
 from app.modules.signers.models import DocumentSigner
 # This import is CRUCIAL for SQLAlchemy to map relationships in standalone scripts
-from app.modules import models
 from sqlalchemy import select, func
 
 async def audit():

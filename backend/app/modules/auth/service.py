@@ -13,7 +13,7 @@ from app.modules.users.models import User
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.repository import AuthRepository, EmailVerificationRepository, PasswordResetRepository
 from app.modules.auth.models import RefreshToken, EmailVerificationToken, PasswordResetToken
-from app.modules.auth.schemas import LoginRequest, TokenResponse, ForgotPasswordRequest, ResetPasswordRequest
+from app.modules.auth.schemas import LoginRequest, TokenResponse
 from app.modules.audit.service import AuditService
 from app.modules.notifications.service import NotificationService
 from app.common.enums import AuditActorType, AuditEventType

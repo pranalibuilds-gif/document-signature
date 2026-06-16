@@ -10,7 +10,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.documents.models import Document, DocumentFile
 from app.modules.documents.repository import DocumentRepository
-from app.modules.documents.schemas import DocumentCreate, DocumentUpdate
+from app.modules.documents.schemas import DocumentCreate
 from app.modules.signers.models import SigningToken
 from app.modules.signers.repository import SignerRepository
 from app.modules.users.repository import UserRepository
@@ -126,7 +126,8 @@ class DocumentService:
             return
 
         signers = await self.signer_repo.list_by_document(document_id)
-        if not signers: return
+        if not signers:
+            return
 
         all_signed = all(s.status == SignerStatus.SIGNED for s in signers)
         any_rejected = any(s.status == SignerStatus.REJECTED for s in signers)

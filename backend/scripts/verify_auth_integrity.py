@@ -1,8 +1,5 @@
 import asyncio
 import httpx
-from app.core.security.jwt import create_access_token, create_refresh_token
-from app.common.enums import UserRole
-import uuid
 
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 

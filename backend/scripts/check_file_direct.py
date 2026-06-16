@@ -1,6 +1,5 @@
 import asyncio
 import os
-import uuid
 from app.core.database import AsyncSessionLocal
 from sqlalchemy import text
 

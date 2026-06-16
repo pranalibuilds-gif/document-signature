@@ -9,7 +9,7 @@ from app.modules.documents.models import Document, DocumentFile
 from app.modules.signers.models import DocumentSigner, SigningToken
 from app.modules.fields.models import SignatureField
 from app.common.enums import DocumentStatus, SignerStatus, FieldType
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 async def run():
     async with AsyncSessionLocal() as s:

@@ -17,7 +17,7 @@ async def run():
         print(f"Document Found: {doc.title} | Status: {doc.status}")
 
         # 2. Check DocumentFile
-        res = await s.execute(select(DocumentFile).where(DocumentFile.document_id == doc_id, DocumentFile.is_final == False))
+        res = await s.execute(select(DocumentFile).where(DocumentFile.document_id == doc_id, not DocumentFile.is_final))
         df = res.scalar_one_or_none()
         if not df:
             print("No original DocumentFile record found.")

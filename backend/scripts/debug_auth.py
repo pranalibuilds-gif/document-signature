@@ -2,9 +2,7 @@ import asyncio
 from app.core.database import AsyncSessionLocal
 from app.modules.users.models import User
 from app.core.security.hashing import hash_password, verify_password
-from app.common.enums import UserRole
 from sqlalchemy import select
-from uuid import UUID
 
 async def debug():
     async with AsyncSessionLocal() as s:

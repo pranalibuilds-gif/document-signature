@@ -5,13 +5,12 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 from app.core.database import AsyncSessionLocal
 from app.core.security.hashing import hash_password
-from app.common.enums import DocumentStatus, SignerStatus, UserRole, AuditActorType, AuditEventType, NotificationType, NotificationStatus, FieldType
+from app.common.enums import DocumentStatus, SignerStatus, UserRole, AuditActorType, AuditEventType, FieldType
 from app.modules.users.models import User
 from app.modules.documents.models import Document, DocumentFile
 from app.modules.signers.models import DocumentSigner
 from app.modules.fields.models import SignatureField
 from app.modules.audit.models import AuditLog
-from app.modules.notifications.models import Notification
 
 async def seed():
     async with AsyncSessionLocal() as session:
