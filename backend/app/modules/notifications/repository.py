@@ -20,6 +20,12 @@ class NotificationRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_status(self, status: NotificationStatus) -> list[Notification]:
+        result = await self.session.execute(
+            select(Notification).where(Notification.status == status)
+        )
+        return list(result.scalars().all())
+
     async def update_status(
         self,
         notification_id: uuid.UUID,

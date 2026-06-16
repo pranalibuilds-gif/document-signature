@@ -36,6 +36,16 @@ async def get_notification_metrics(
     service = AdminService(db)
     return await service.get_notification_health()
 
+@router.post("/notifications/retry", status_code=status.HTTP_200_OK)
+async def retry_notifications(
+    db: AsyncSession = Depends(get_db),
+    _admin: any = Depends(require_admin)
+):
+    from app.modules.notifications.service import NotificationService
+    service = NotificationService(db)
+    count = await service.retry_failed_notifications()
+    return {"message": f"Successfully retried {count} notifications"}
+
 @router.get("/audit", response_model=List[AuditLogRead])
 async def search_audit_logs(
     user_id: uuid.UUID | None = None,

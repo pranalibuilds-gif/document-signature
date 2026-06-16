@@ -75,3 +75,25 @@ class NotificationService:
         await self.session.commit()
 
         return notification
+
+    async def retry_failed_notifications(self) -> int:
+        """
+        Attempts to redeliver all notifications that are currently in FAILED status.
+        Returns the count of successfully redelivered notifications.
+        """
+        failed = await self.repo.get_by_status(NotificationStatus.FAILED)
+        success_count = 0
+
+        for notif in failed:
+            try:
+                success = await self.provider.send_email(notif.recipient_email, notif.subject, notif.body)
+                if success:
+                    await self.repo.update_status(notif.id, NotificationStatus.SENT)
+                    success_count += 1
+            except Exception:
+                pass
+
+        if success_count > 0:
+            await self.session.commit()
+
+        return success_count
