@@ -22,6 +22,7 @@ class Notification(Base, UUIDMixin, TimestampMixin):
 
     recipient_email: Mapped[str] = mapped_column(String(255), nullable=False)
     subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
 
     sent_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

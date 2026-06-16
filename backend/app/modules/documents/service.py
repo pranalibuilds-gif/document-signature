@@ -148,6 +148,17 @@ class DocumentService:
                 event_data={"signer": rejected_signer.email, "reason": rejected_signer.rejection_reason}
             )
 
+            # TC-8.5.1: Notify Owner about rejection
+            owner = await self.user_repo.get_by_id(document.owner_id)
+            if owner:
+                await self.notification_service.send_notification(
+                    recipient_email=owner.email,
+                    subject=f"Document Rejected: {document.title}",
+                    body=f"Signer {rejected_signer.email} has rejected '{document.title}'. Reason: {rejected_signer.rejection_reason or 'No reason provided'}",
+                    type=NotificationType.REJECTION,
+                    document_id=document_id
+                )
+
         # --- COMPLETION LOGIC ---
         elif all_signed:
             document.status = DocumentStatus.COMPLETED

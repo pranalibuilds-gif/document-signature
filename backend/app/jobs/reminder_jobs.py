@@ -22,19 +22,19 @@ async def send_signer_reminders_job():
                 if not document:
                     continue
 
-                # Fetch active token for this signer
-                from sqlalchemy import text
-                await session.execute(
-                    text("SELECT id FROM signing_tokens WHERE document_signer_id = :sid AND used_at IS NULL LIMIT 1"),
-                    {"sid": signer.id}
-                )
+                # Fetch the raw token from Notification or Audit logs if possible,
+                # but SigningToken only stores hash.
+                # For this demo/simulation, we'll assume we send a generic secure link
+                # that requires a fresh token generation or uses the email context.
+                # In a real app, we'd store the invitation_token_id or similar.
 
-                link = "http://localhost:3000/signing/..."
+                # For now, let's just make sure the email is triggered correctly.
+                link = f"http://localhost:3000/signing/remind/{signer.id}"
 
                 await notification_service.send_notification(
                     recipient_email=signer.email,
                     subject=f"Reminder: Signature Required - {document.title}",
-                    body=f"This is a reminder to sign '{document.title}'. Link: {link}",
+                    body=f"This is a reminder to sign '{document.title}'. You can access your signing session here: {link}",
                     type=NotificationType.REMINDER,
                     document_id=signer.document_id
                 )

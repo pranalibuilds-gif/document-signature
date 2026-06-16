@@ -31,6 +31,7 @@ class NotificationService:
             type=type,
             recipient_email=recipient_email,
             subject=subject,
+            body=body,
             status=NotificationStatus.PENDING
         )
         notification = await self.repo.create(notification)
@@ -69,5 +70,8 @@ class NotificationService:
                 document_id=document_id,
                 event_data={"type": type, "recipient": recipient_email, "error": final_error}
             )
+
+        # 4. Commit to ensure notification state is persisted
+        await self.session.commit()
 
         return notification

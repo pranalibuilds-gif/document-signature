@@ -37,6 +37,7 @@ class NotificationType(str, Enum):
     REMINDER = "REMINDER"
     COMPLETION = "COMPLETION"
     REJECTION = "REJECTION"
+    EXPIRATION = "EXPIRATION"
 
 class NotificationStatus(str, Enum):
     """Delivery status of a notification."""
