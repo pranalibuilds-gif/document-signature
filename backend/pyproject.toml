@@ -18,6 +18,7 @@ dependencies = [
     "slowapi",
     "httpx",
     "jinja2",
+    "email-validator",
 ]
 
 [tool.ruff]
