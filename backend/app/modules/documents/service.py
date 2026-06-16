@@ -234,6 +234,30 @@ class DocumentService:
         """Returns a list of documents owned by the specified user."""
         return await self.repo.list_by_owner(owner_id, skip, limit)
 
+    async def update_document(
+        self, document_id: uuid.UUID, user_id: uuid.UUID, doc_in: DocumentUpdate
+    ) -> Document:
+        """Updates document metadata while enforcing ownership and state rules."""
+        document = await self.get_document(document_id, user_id)
+
+        # State Protection: Only DRAFT documents can be edited
+        if document.status != DocumentStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cannot edit document in {document.status} state"
+            )
+
+        update_data = doc_in.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(document, key, value)
+
+        return await self.repo.update(document)
+
+    async def delete_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        """Performs a deletion of a document after checking ownership."""
+        await self.get_document(document_id, user_id)
+        await self.repo.delete(document_id)
+
     async def get_document_file_path(self, document_id: uuid.UUID, user_id: uuid.UUID) -> str:
         """Returns the physical file path for a document, enforcing ownership."""
         await self.get_document(document_id, user_id)
