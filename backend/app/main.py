@@ -58,6 +58,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health")
 async def health_check():
     """Basic health check endpoint for monitoring."""
+    # Build-trigger-01
     return {
         "status": "healthy",
         "version": settings.VERSION,
