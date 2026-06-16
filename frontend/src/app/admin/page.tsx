@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
   ]
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="ADMIN">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader

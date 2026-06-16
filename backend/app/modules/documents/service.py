@@ -232,3 +232,11 @@ class DocumentService:
     async def list_documents(self, owner_id: uuid.UUID, skip: int = 0, limit: int = 100) -> list[Document]:
         """Returns a list of documents owned by the specified user."""
         return await self.repo.list_by_owner(owner_id, skip, limit)
+
+    async def get_document_file_path(self, document_id: uuid.UUID, user_id: uuid.UUID) -> str:
+        """Returns the physical file path for a document, enforcing ownership."""
+        await self.get_document(document_id, user_id)
+        original_file = await self.repo.get_original_file(document_id)
+        if not original_file:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document file not found")
+        return original_file.file_path

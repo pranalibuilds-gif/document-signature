@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
   }, [])
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="ADMIN">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader

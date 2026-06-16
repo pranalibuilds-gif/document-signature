@@ -62,7 +62,7 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer>
           <div className="mb-6">
@@ -78,11 +78,20 @@ export default function DocumentDetailPage() {
             actions={
               <div className="flex items-center gap-3">
                 {doc.status === 'COMPLETED' && (
-                  <Button className="btn-accent" asChild>
-                    <a href={`/api/v1/documents/${id}/final-file`} download>
-                      <Download size={18} className="mr-2" />
-                      Download Signed PDF
-                    </a>
+                  <Button
+                    className="btn-accent"
+                    onClick={() => {
+                      const downloadUrl = `/api/v1/documents/${id}/final-file`
+                      const anchor = document.createElement("a")
+                      anchor.href = downloadUrl
+                      anchor.download = ""
+                      document.body.appendChild(anchor)
+                      anchor.click()
+                      document.body.removeChild(anchor)
+                    }}
+                  >
+                    <Download size={18} className="mr-2" />
+                    Download Signed PDF
                   </Button>
                 )}
                 {doc.status === 'DRAFT' && (

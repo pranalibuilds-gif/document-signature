@@ -58,7 +58,7 @@ export default function DocumentReviewPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer size="tight">
           <SectionHeader

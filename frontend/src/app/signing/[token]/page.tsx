@@ -170,7 +170,7 @@ export default function SigningPage() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto flex justify-center pb-16">
         {document && (
-          <SigningViewer fileUrl={`/api/v1/documents/${document.id}/file`} />
+          <SigningViewer fileUrl={`/api/v1/signing/${token}/file`} />
         )}
 
         {/* Floating "Next Field" Button */}

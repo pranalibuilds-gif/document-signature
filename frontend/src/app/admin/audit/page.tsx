@@ -38,7 +38,7 @@ export default function AdminAuditPage() {
   )
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="ADMIN">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader

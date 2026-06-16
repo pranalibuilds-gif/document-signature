@@ -52,7 +52,7 @@ export default function CreateDocumentPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer size="tight">
           <SectionHeader

@@ -67,7 +67,7 @@ export default function DocumentSetupPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer size="tight">
           <SectionHeader

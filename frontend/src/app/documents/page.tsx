@@ -41,7 +41,7 @@ export default function DocumentsPage() {
   )
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader
@@ -132,13 +132,19 @@ export default function DocumentsPage() {
                               size="sm"
                               variant="outline"
                               className="h-9 px-4 text-xs font-bold"
-                              asChild
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const downloadUrl = `/api/v1/documents/${doc.id}/final-file`
+                                const anchor = document.createElement("a")
+                                anchor.href = downloadUrl
+                                anchor.download = ""
+                                document.body.appendChild(anchor)
+                                anchor.click()
+                                document.body.removeChild(anchor)
+                              }}
                             >
-                              <a href={`/api/v1/documents/${doc.id}/final-file`} download>
-                                <FileDown size={16} className="mr-2" />
-                                Download Final PDF
-                              </a>
+                              <FileDown size={16} className="mr-2" />
+                              Download Final PDF
                             </Button>
                           )}
                           <ChevronRight size={20} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />

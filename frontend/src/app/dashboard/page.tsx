@@ -17,7 +17,9 @@ import {
   Clock,
   AlertCircle,
   ChevronRight,
-  FileDown
+  FileDown,
+  ShieldAlert,
+  ArrowRight
 } from "lucide-react"
 import { useAuthStore } from "@/store/use-auth-store"
 import api from "@/lib/api"
@@ -67,9 +69,28 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer>
+          {/* Verification Banner TC-4.1 */}
+          {!user?.is_verified && (
+            <div className="mb-8 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
+                  <ShieldAlert size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-amber-900">Verify your email address</p>
+                  <p className="text-xs text-amber-700 mt-0.5">You need to verify your email before you can activate and send documents for signing.</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100 h-9 px-4">
+                Resend Link
+                <ArrowRight size={14} className="ml-2" />
+              </Button>
+            </div>
+          )}
+
           <SectionHeader
             title={`Welcome back, ${user?.first_name || "User"}`}
             description="Here's what's happening with your documents today."
@@ -150,13 +171,19 @@ export default function DashboardPage() {
                             size="sm"
                             variant="outline"
                             className="h-8 text-[10px] font-bold uppercase tracking-tight"
-                            asChild
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const downloadUrl = `/api/v1/documents/${doc.id}/final-file`
+                              const anchor = document.createElement("a")
+                              anchor.href = downloadUrl
+                              anchor.download = ""
+                              document.body.appendChild(anchor)
+                              anchor.click()
+                              document.body.removeChild(anchor)
+                            }}
                           >
-                            <a href={`/api/v1/documents/${doc.id}/final-file`} download>
-                              <FileDown size={14} className="mr-1" />
-                              Download
-                            </a>
+                            <FileDown size={14} className="mr-1" />
+                            Download
                           </Button>
                         ) : (
                           <ChevronRight size={16} className="text-stone-300 group-hover:text-accent group-hover:translate-x-1 transition-all shrink-0" />

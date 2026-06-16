@@ -15,6 +15,7 @@ from app.modules.signers.models import DocumentSigner, SigningToken
 from app.modules.fields.models import SignatureField
 from app.modules.audit.models import AuditLog
 from app.modules.signing.models import FieldValue
+from app.core.config import settings
 
 COMPANY_NAME = "Northstar Technologies Pvt. Ltd."
 COMPANY_DOMAIN = "northstar-tech.com"
@@ -62,6 +63,10 @@ def generate_mock_pdf(filename, title):
     c.save()
 
 async def seed():
+    if settings.ENVIRONMENT == "production":
+        print("CRITICAL: Seeding is disabled in production environment.")
+        return
+
     async with AsyncSessionLocal() as session:
         print("--- NORTHSTAR TECHNOLOGIES SEED START ---")
         print("Step 1: Wiping previous data...")

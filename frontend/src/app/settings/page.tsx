@@ -9,7 +9,7 @@ import { Settings, User, Bell, Shield, Palette } from "lucide-react"
 
 export default function SettingsPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader

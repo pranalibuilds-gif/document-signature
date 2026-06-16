@@ -9,7 +9,7 @@ import { Users, Mail, Clock } from "lucide-react"
 
 export default function SignersPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
         <PageContainer>
           <SectionHeader

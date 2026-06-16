@@ -162,7 +162,7 @@ export default function DocumentEditorPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="USER">
       <div className="flex flex-col h-screen bg-stone-100/50">
         {/* Editor Topbar */}
         <header className="flex h-14 items-center justify-between border-b bg-card px-4 shrink-0">

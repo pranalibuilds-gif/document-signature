@@ -22,6 +22,7 @@ interface PDFViewerProps {
 export function PDFViewer({ fileUrl, onFieldPlace }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const zoom = useEditorStore((state) => state.zoom)
+  const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null
 
   /**
    * PDF Load Callback
@@ -50,7 +51,10 @@ export function PDFViewer({ fileUrl, onFieldPlace }: PDFViewerProps) {
   return (
     <div className="flex flex-col items-center gap-8 py-8 w-full">
       <Document
-        file={fileUrl}
+        file={{
+          url: fileUrl,
+          httpHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+        }}
         onLoadSuccess={onDocumentLoadSuccess}
         loading={
           <div className="flex items-center justify-center p-12">

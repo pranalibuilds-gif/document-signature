@@ -3,6 +3,7 @@
  * Handles base URL configuration, request authentication, and global error handling.
  */
 import axios from "axios"
+import { useAuthStore } from "@/store/use-auth-store"
 
 const api = axios.create({
   baseURL: "/api/v1", // Proxied by next.config.mjs to the backend
@@ -33,8 +34,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear invalid credentials and redirect
-      localStorage.removeItem("access_token")
+      // 1. Clear invalid credentials from persistence and memory
+      useAuthStore.getState().logout()
+
+      // 2. Redirect to login with expiration context
       if (typeof window !== "undefined") {
         window.location.href = "/login?expired=true"
       }
