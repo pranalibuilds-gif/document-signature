@@ -1,101 +1,89 @@
-# DocuSign Mini - Secure Document Signing SaaS
+# Northstar Sign - Enterprise Document Workflow SaaS
+
+Northstar Sign is a high-fidelity, full-stack document signature platform designed for secure organizational workflows. Built with a focus on **security, scale, and visual precision**, it provides a "Cozy Premium" experience for managing legally-binding signatures.
 
 **Built from scratch with zero boilerplate.**
 
-DocuSign Mini is a professional-grade, full-stack document signature platform designed for small to mid-sized organizations. It provides a seamless, secure, and legally-compliant workflow for managing document signatures, from initial creation to final PDF generation.
+---
+
+## 🏢 Interactive Corporate Demo
+The project includes a pre-configured corporate environment for **Northstar Technologies Pvt. Ltd.**, featuring over 12 months of organic activity.
+
+| Role | Credentials | Access Level |
+| :--- | :--- | :--- |
+| **Manager** | `pranali@northstar-tech.com` / `northstar2025` | Document Creation, Workflow Management |
+| **Administrator** | `admin@northstar-tech.com` / `admin123` | Global Audit, Metrics, System Health |
+
+> **Quick Start:** Run `python scripts/seed_demo_data.py` to reset the dashboard to its "lived-in" corporate state.
 
 ---
 
-## 🏢 Corporate Demo Environment
-The application comes with a pre-configured corporate dataset simulating **Northstar Technologies Pvt. Ltd.** with over 12 months of organic activity.
+## 🚀 Key Product Features
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Manager (User)** | `pranali@northstar-tech.com` | `northstar2025` |
-| **System Admin** | `admin@northstar-tech.com` | `admin123` |
+### 📄 Intelligent Document Lifecycle
+*   **Visual Editor:** Responsive, percentage-based coordinate system for precise field placement on any PDF.
+*   **Multi-Signer Support:** Atomic state machine managing `PENDING` -> `PARTIALLY_SIGNED` -> `COMPLETED` transitions.
+*   **Final PDF Engine:** High-fidelity server-side PDF generation with dynamic signature overlays.
+*   **Rejection & Expiration:** Robust handling of business edge cases with automated owner notifications.
 
-### Seeding the Demo Data
-To reset the environment to its verified corporate state:
+### 🛡️ Security & Engineering Maturity
+*   **Identity Isolation:** Dual-portal architecture strictly separating Admin oversight from User workflows.
+*   **Token Hardening:** One-way SHA-256 hashing for all signing tokens; single-use "burn" logic.
+*   **Audit Trail:** Immutable, searchable ledger of every system event for compliance.
+*   **Resilient Infrastructure:** Rate limiting, secure headers, and transaction-safe background jobs.
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend (The Engine)
+*   **FastAPI:** High-performance asynchronous framework.
+*   **PostgreSQL + SQLAlchemy:** Robust relational storage with asyncpg drivers.
+*   **Alembic:** Precise schema versioning and migrations.
+*   **ReportLab & PyPDF:** Advanced PDF processing and coordinate mapping.
+*   **APScheduler:** Reliable background jobs for reminders and cleanups.
+
+### Frontend (The Experience)
+*   **Next.js (App Router):** Modern React architecture.
+*   **Tailwind CSS:** "Cozy Premium" design system using Stone/Navy/Emerald palettes.
+*   **Zustand:** Centralized state management for auth and editor contexts.
+*   **React-PDF:** Interactive document rendering and field annotation.
+
+---
+
+## 📦 Local Installation
+
+### Prerequisites
+*   Python 3.12+
+*   Node.js 20+
+*   PostgreSQL 16+
+
+### 1. Backend Setup
 ```bash
 cd backend
-$env:PYTHONPATH="."
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
 python scripts/seed_demo_data.py
+uvicorn app.main:app --reload
+```
+
+### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## 🚀 Key Features
+## 📜 Architectural Decisions
+*   **Coordinate System:** Used percentage-based coordinates (0-100) instead of pixels to ensure signatures stay perfectly aligned regardless of the signer's device resolution.
+*   **Token Security:** Signing links are high-entropy, hashed on the server, and never stored in plain text to prevent link hijacking.
+*   **Portal Separation:** Implemented mandatory server-side role checks for the `/admin` routes to ensure zero privilege escalation.
 
-### 📄 Document Lifecycle Management
-*   **DRAFT:** Intuitive setup for document titles and metadata.
-*   **PDF UPLOAD:** Secure handling and storage of original PDF documents.
-*   **VISUAL EDITOR:** Drag-and-drop interactive interface for placing signature, text, and date fields using percentage-based coordinates for perfect responsiveness across all devices.
-*   **REVIEW & ACTIVATE:** Final summary and validation before sending invitations.
-*   **PENDING / PARTIAL:** Real-time tracking of signer progress.
-*   **COMPLETED:** Automatic generation of final PDFs with high-fidelity signature overlays.
-
-### ✍️ Signer Experience
-*   **WELCOME TUNNEL:** Professional landing page clarifying the legal nature of electronic signatures.
-*   **MOBILE-FIRST VIEWER:** Responsive PDF viewing and field interaction optimized for touch devices.
-*   **PREMIUM SIGNATURES:** Choice of multiple high-end cursive and script fonts for a personal touch.
-
-### 🛡️ Security & Compliance
-*   **JWT AUTHENTICATION:** Secure session management with short-lived access tokens and rotated refresh tokens.
-*   **TOKEN HASHING:** One-way SHA-256 hashing for all signing and reset tokens, ensuring they remain secure even if the database is accessed.
-*   **AUDIT TRAIL:** Immutable record of every system event, including creation, views, signatures, and rejections.
-*   **RATE LIMITING:** Granular protection against brute-force and abuse on sensitive endpoints.
-
-### 💼 Admin & Oversight
-*   **DASHBOARD METRICS:** High-level overview of system usage and document status distribution.
-*   **USER MANAGEMENT:** Searchable directory of registered users and their verification status.
-*   **GLOBAL AUDIT LOG:** Centralized compliance log for security monitoring.
-
-## 🛠️ Technology Stack
-
-### Backend
-*   **FastAPI:** High-performance Python web framework.
-*   **SQLAlchemy + asyncpg:** Asynchronous ORM for robust database interaction.
-*   **PostgreSQL:** Relational database for metadata and audit storage.
-*   **ReportLab & PyPDF:** Advanced PDF processing for coordinate calculation and overlays.
-*   **APScheduler:** Automated cleanup and reminder jobs.
-
-### Frontend
-*   **Next.js (App Router):** React framework for modern web experiences.
-*   **Zustand:** Lightweight state management for auth and editor contexts.
-*   **Tailwind CSS:** "Cozy Premium" aesthetic using the latest Tailwind v4 features.
-*   **React-PDF:** Interactive PDF rendering and coordinate mapping.
-*   **Lucide React:** Consistent and professional iconography.
-
-## 📦 Getting Started
-
-### Prerequisites
-*   Python 3.9+
-*   Node.js 18+
-*   PostgreSQL 14+
-
-### Setup
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/pranalibuilds-gif/document-signature.git
-    cd document-signature
-    ```
-
-2.  **Backend Setup:**
-    ```bash
-    cd backend
-    python -m venv .venv
-    source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
-    pip install -r requirements.txt
-    alembic upgrade head
-    uvicorn app.main:app --reload
-    ```
-
-3.  **Frontend Setup:**
-    ```bash
-    cd frontend
-    npm install
-    npm run dev
-    ```
+---
 
 ## 📜 License
 This project is for educational and portfolio purposes. All rights reserved.
