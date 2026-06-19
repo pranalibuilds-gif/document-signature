@@ -14,6 +14,8 @@ import {
   X,
   History
 } from "lucide-react"
+import { useAuthStore } from "@/store/use-auth-store"
+import { useRouter } from "next/navigation"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -30,6 +32,14 @@ const adminNavigation = [
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    router.push("/login")
+    if (onClose) onClose()
+  }
 
   return (
     <div className="flex h-full w-full flex-col border-r bg-card relative">
@@ -109,7 +119,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       <div className="border-t p-4">
-        <button className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive"
+        >
           <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
           Sign Out
         </button>
