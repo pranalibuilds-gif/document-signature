@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum, UUID, Integer, Float, Boolean
+from sqlalchemy import ForeignKey, Enum, UUID, Integer, Float, Boolean, String
 from app.common.models import UUIDMixin, TimestampMixin
 from app.common.enums import FieldType
 from app.core.database import Base

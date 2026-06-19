@@ -10,8 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Trash2, Plus, Users, ArrowRight, Loader2, Mail } from "lucide-react"
+import { Trash2, Plus, Users, ArrowRight, Loader2, Mail, UserCheck } from "lucide-react"
 import api from "@/lib/api"
+import { useAuthStore } from "@/store/use-auth-store"
 
 interface Signer {
   id: string
@@ -22,10 +23,13 @@ interface Signer {
 export default function DocumentSetupPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { user } = useAuthStore()
   const [signers, setSigners] = useState<Signer[]>([])
   const [newEmail, setNewEmail] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
+
+  const isOwnerAlreadySigner = signers.some(s => s.email === user?.email)
 
   useEffect(() => {
     const fetchSigners = async () => {
@@ -66,6 +70,19 @@ export default function DocumentSetupPage() {
     }
   }
 
+  const handleAddSelf = async () => {
+    if (!user?.email) return
+    setIsAdding(true)
+    try {
+      const res = await api.post(`/documents/${id}/signers`, { email: user.email })
+      setSigners([...signers, res.data])
+    } catch (err) {
+      alert("Failed to add yourself as a signer")
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
   return (
     <ProtectedRoute requiredRole="USER">
       <DashboardLayout>
@@ -87,22 +104,37 @@ export default function DocumentSetupPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <form onSubmit={handleAddSigner} className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="signer@example.com"
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      required
+                <div className="flex flex-col gap-4">
+                  {!isOwnerAlreadySigner && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-12 border-accent/20 text-accent hover:bg-accent/5 font-bold"
+                      onClick={handleAddSelf}
                       disabled={isAdding}
-                    />
-                  </div>
-                  <Button type="submit" variant="secondary" disabled={isAdding}>
-                    {isAdding ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} className="mr-2" />}
-                    Add Signer
-                  </Button>
-                </form>
+                    >
+                      <UserCheck size={18} className="mr-2" />
+                      Add Me as Signer
+                    </Button>
+                  )}
+
+                  <form onSubmit={handleAddSigner} className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="signer@example.com"
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        required
+                        disabled={isAdding}
+                      />
+                    </div>
+                    <Button type="submit" variant="secondary" disabled={isAdding}>
+                      {isAdding ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} className="mr-2" />}
+                      Add Others
+                    </Button>
+                  </form>
+                </div>
 
                 <div className="space-y-3">
                   {signers.length === 0 ? (

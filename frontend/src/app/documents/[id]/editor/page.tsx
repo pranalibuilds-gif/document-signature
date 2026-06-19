@@ -185,9 +185,6 @@ export default function DocumentEditorPage() {
     const field = fields.find(f => f.id === fieldId)
     if (!field) return
 
-    const signer = signers.find(s => s.id === field.signerId)
-    if (signer?.email !== user?.email) return
-
     setInteractFieldId(fieldId)
     if (field.type === "SIGNATURE") {
       setIsSigModalOpen(true)
