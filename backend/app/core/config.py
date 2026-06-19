@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
     # --- Database Settings ---
     POSTGRES_SERVER: str

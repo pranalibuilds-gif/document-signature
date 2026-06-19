@@ -83,6 +83,10 @@ async def download_final_document(
     if not final_file:
         raise HTTPException(status_code=404, detail="Final PDF not generated yet")
 
+    import os
+    if not os.path.exists(final_file.file_path):
+        raise HTTPException(status_code=404, detail="Physical file missing on server")
+
     return FileResponse(final_file.file_path, media_type="application/pdf")
 
 @router.post("/{document_id}/activate", status_code=status.HTTP_200_OK)

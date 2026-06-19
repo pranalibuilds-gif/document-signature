@@ -87,6 +87,11 @@ class DocumentService:
         token_data = []
 
         for signer in signers:
+            # Race condition protection: check if token already exists
+            existing_token = await self.signer_repo.get_token_by_signer(signer.id)
+            if existing_token:
+                continue
+
             raw_token = secrets.token_urlsafe(32)
             token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
             expires_at = datetime.now(timezone.utc) + timedelta(days=settings.SIGNING_TOKEN_EXPIRY_DAYS)

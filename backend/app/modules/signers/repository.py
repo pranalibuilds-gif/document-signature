@@ -55,6 +55,12 @@ class SignerRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_token_by_signer(self, signer_id: uuid.UUID) -> SigningToken | None:
+        result = await self.session.execute(
+            select(SigningToken).where(SigningToken.document_signer_id == signer_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_pending_reminders(self, days: int) -> list[DocumentSigner]:
         from datetime import datetime, timezone, timedelta
         from app.common.enums import SignerStatus, DocumentStatus
