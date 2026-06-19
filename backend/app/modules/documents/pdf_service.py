@@ -78,7 +78,7 @@ class PdfGenerationService:
                 can = canvas.Canvas(packet, pagesize=(width, height))
 
                 for f in fields_by_page[page_num]:
-                    val = values.get(f.id, "")
+                    val = values.get(f.id, f.pre_filled_value or "")
                     if not val:
                         continue
 

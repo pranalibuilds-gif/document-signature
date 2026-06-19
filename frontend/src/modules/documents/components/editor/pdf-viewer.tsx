@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Document, Page, pdfjs } from "react-pdf"
 import { Loader2 } from "lucide-react"
 import { useEditorStore } from "@/store/use-editor-store"
@@ -12,6 +12,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface PDFViewerProps {
   fileUrl: string
   onFieldPlace: (pageNumber: number, x: number, y: number) => void
+  onFieldInteract?: (fieldId: string) => void
 }
 
 /**
@@ -19,10 +20,15 @@ interface PDFViewerProps {
  * Renders an interactive PDF document allowing users to place signature fields.
  * Uses percentage-based coordinates to ensure responsiveness across different screen sizes.
  */
-export function PDFViewer({ fileUrl, onFieldPlace }: PDFViewerProps) {
+export function PDFViewer({ fileUrl, onFieldPlace, onFieldInteract }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const zoom = useEditorStore((state) => state.zoom)
   const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null
+
+  const file = useMemo(() => ({
+    url: fileUrl,
+    httpHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+  }), [fileUrl, token])
 
   /**
    * PDF Load Callback
@@ -51,10 +57,7 @@ export function PDFViewer({ fileUrl, onFieldPlace }: PDFViewerProps) {
   return (
     <div className="flex flex-col items-center gap-8 py-8 w-full">
       <Document
-        file={{
-          url: fileUrl,
-          httpHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-        }}
+        file={file}
         onLoadSuccess={onDocumentLoadSuccess}
         loading={
           <div className="flex items-center justify-center p-12">
@@ -78,7 +81,7 @@ export function PDFViewer({ fileUrl, onFieldPlace }: PDFViewerProps) {
               />
             </div>
             {/* Renders the interactive fields (boxes) on top of the PDF page */}
-            <FieldOverlay pageNumber={index + 1} />
+            <FieldOverlay pageNumber={index + 1} onInteract={onFieldInteract} />
 
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium bg-white/80 px-2 py-0.5 rounded-full border">
                PAGE {index + 1} OF {numPages}

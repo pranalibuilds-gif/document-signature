@@ -20,15 +20,26 @@ import { cn } from "@/lib/utils"
 import { useEditorStore, FieldType, EditorField } from "@/store/use-editor-store"
 import { PDFViewer } from "@/modules/documents/components/editor/pdf-viewer"
 import { Label } from "@/components/ui/label"
-import { Trash2, Plus, Minus } from "lucide-react"
+import { Trash2, Plus, Minus, Check } from "lucide-react"
+import { SignatureModal } from "@/modules/signing/components/signature-modal"
+import { useAuthStore } from "@/store/use-auth-store"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 export default function DocumentEditorPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { user } = useAuthStore()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [document, setDocument] = useState<any>(null)
   const [signers, setSigners] = useState<any[]>([])
+
+  // Modal State for Self-Signing
+  const [isSigModalOpen, setIsSigModalOpen] = useState(false)
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false)
+  const [textInput, setTextValue] = useState("")
+  const [interactFieldId, setInteractFieldId] = useState<string | null>(null)
 
   const {
     currentSignerId, setCurrentSigner,
@@ -76,7 +87,8 @@ export default function DocumentEditorPage() {
           x: f.x_coordinate,
           y: f.y_coordinate,
           width: f.width,
-          height: f.height
+          height: f.height,
+          value: f.pre_filled_value
         }))
         setFields(mappedFields)
 
@@ -122,7 +134,8 @@ export default function DocumentEditorPage() {
           width: f.width,
           height: f.height,
           field_type: f.type,
-          required: true
+          required: true,
+          pre_filled_value: f.value
         })
       }
 
@@ -134,7 +147,8 @@ export default function DocumentEditorPage() {
           assigned_signer_id: f.signerId,
           page_number: f.pageNumber,
           width: f.width,
-          height: f.height
+          height: f.height,
+          pre_filled_value: f.value
         })
       }
 
@@ -164,6 +178,37 @@ export default function DocumentEditorPage() {
       router.push("/documents?activated=true")
     } catch (err: any) {
       alert(err.response?.data?.detail || "Failed to activate document")
+    }
+  }
+
+  const handleFieldInteract = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId)
+    if (!field) return
+
+    const signer = signers.find(s => s.id === field.signerId)
+    if (signer?.email !== user?.email) return
+
+    setInteractFieldId(fieldId)
+    if (field.type === "SIGNATURE") {
+      setIsSigModalOpen(true)
+    } else if (field.type === "DATE") {
+      updateField(fieldId, { value: new Date().toISOString().split('T')[0] })
+    } else {
+      setTextValue(field.value || "")
+      setIsTextModalOpen(true)
+    }
+  }
+
+  const onConfirmSignature = (name: string) => {
+    if (interactFieldId) {
+      updateField(interactFieldId, { value: name })
+    }
+  }
+
+  const onConfirmText = () => {
+    if (interactFieldId) {
+      updateField(interactFieldId, { value: textInput })
+      setIsTextModalOpen(false)
     }
   }
 
@@ -305,6 +350,7 @@ export default function DocumentEditorPage() {
               <PDFViewer
                 fileUrl={`/api/v1/documents/${id}/file`}
                 onFieldPlace={handleFieldPlace}
+                onFieldInteract={handleFieldInteract}
               />
             )}
           </main>
@@ -360,6 +406,35 @@ export default function DocumentEditorPage() {
              </div>
           </aside>
         </div>
+
+        <SignatureModal
+          isOpen={isSigModalOpen}
+          onClose={() => setIsSigModalOpen(false)}
+          onConfirm={onConfirmSignature}
+          initialName={user?.first_name ? `${user.first_name} ${user.last_name || ''}` : ""}
+        />
+
+        <Dialog open={isTextModalOpen} onOpenChange={setIsTextModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Pre-fill Information</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="prefill-input" className="mb-2 block text-xs">Value</Label>
+              <Input
+                id="prefill-input"
+                value={textInput}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onConfirmText()}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsTextModalOpen(false)}>Cancel</Button>
+              <Button className="btn-accent" onClick={onConfirmText}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   )

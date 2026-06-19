@@ -28,6 +28,8 @@ class SignatureField(Base, UUIDMixin, TimestampMixin):
 
     required: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    pre_filled_value: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # Relationships
     document = relationship("Document", backref="fields")
     signer = relationship("DocumentSigner", backref="assigned_fields")

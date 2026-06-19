@@ -30,7 +30,8 @@ export default function SigningPage() {
           y: f.y_coordinate,
           width: f.width,
           height: f.height,
-          required: f.required
+          required: f.required,
+          value: f.pre_filled_value
         }))
         setSession(res.data.document, res.data.signer, mappedFields)
       } catch (err: any) {

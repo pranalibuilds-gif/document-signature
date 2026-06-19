@@ -11,6 +11,7 @@ export interface EditorField {
   y: number // percentage 0-100
   width: number
   height: number
+  value?: string
 }
 
 interface EditorState {

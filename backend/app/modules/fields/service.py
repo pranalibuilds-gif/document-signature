@@ -61,7 +61,8 @@ class FieldService:
             event_data={
                 "field_type": created_field.field_type,
                 "signer_email": signer.email,
-                "page": created_field.page_number
+                "page": created_field.page_number,
+                "pre_filled": bool(created_field.pre_filled_value)
             }
         )
 

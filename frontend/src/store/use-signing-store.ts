@@ -29,7 +29,15 @@ export const useSigningStore = create<SigningState>((set, get) => ({
   fields: [],
   values: {},
 
-  setSession: (document, signer, fields) => set({ document, signer, fields, values: {} }),
+  setSession: (document, signer, fields) => {
+    const initialValues: Record<string, string> = {}
+    fields.forEach(f => {
+      if (f.value) {
+        initialValues[f.id] = f.value
+      }
+    })
+    set({ document, signer, fields, values: initialValues })
+  },
 
   updateValue: (fieldId, value) => set((state) => ({
     values: { ...state.values, [fieldId]: value }

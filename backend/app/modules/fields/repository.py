@@ -12,6 +12,10 @@ class SignatureFieldRepository:
         await self.session.flush()
         return field
 
+    async def update(self, field: SignatureField) -> SignatureField:
+        await self.session.flush()
+        return field
+
     async def delete(self, field_id: uuid.UUID) -> None:
         await self.session.execute(
             delete(SignatureField).where(SignatureField.id == field_id)

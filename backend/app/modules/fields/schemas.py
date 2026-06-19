@@ -12,6 +12,7 @@ class SignatureFieldBase(BaseSchema):
     height: float = Field(..., gt=0)
     field_type: FieldType
     required: bool = True
+    pre_filled_value: str | None = Field(None, max_length=500)
 
 class SignatureFieldCreate(SignatureFieldBase):
     pass
@@ -25,6 +26,7 @@ class SignatureFieldUpdate(BaseSchema):
     height: float | None = Field(None, gt=0)
     field_type: FieldType | None = None
     required: bool | None = None
+    pre_filled_value: str | None = Field(None, max_length=500)
 
 class SignatureFieldRead(SignatureFieldBase, IDSchema, TimestampSchema):
     document_id: uuid.UUID
