@@ -10,7 +10,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.documents.models import Document, DocumentFile
 from app.modules.documents.repository import DocumentRepository
-from app.modules.documents.schemas import DocumentCreate
+from app.modules.documents.schemas import DocumentCreate, DocumentUpdate
 from app.modules.signers.models import SigningToken
 from app.modules.signers.repository import SignerRepository
 from app.modules.users.repository import UserRepository
