@@ -7,12 +7,13 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 # --- Database Engine ---
-# pool_pre_ping checks connection health before use, helping prevent "Server closed connection" errors
+# SQLite requires check_same_thread=False for async use in the local development fallback.
 engine = create_async_engine(
     settings.SQLALCHEMY_DATABASE_URI,
     echo=settings.DEBUG, # Logs SQL queries when in development mode
     future=True,
     pool_pre_ping=True,
+    connect_args={"check_same_thread": False} if settings.SQLALCHEMY_DATABASE_URI.startswith("sqlite") else {},
 )
 
 # --- Session Factory ---

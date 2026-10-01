@@ -1,89 +1,74 @@
 # Northstar Sign - Enterprise Document Workflow SaaS
 
-Northstar Sign is a high-fidelity, full-stack document signature platform designed for secure organizational workflows. Built with a focus on **security, scale, and visual precision**, it provides a "Cozy Premium" experience for managing legally-binding signatures.
-
-**Built from scratch with zero boilerplate.**
+Northstar Sign is a full-stack document signature platform designed for secure organizational workflows. It is structured as a local-first, zero-cost development project with optional PostgreSQL support for production-style environments.
 
 ---
 
-## 🏢 Interactive Corporate Demo
-The project includes a pre-configured corporate environment for **Northstar Technologies Pvt. Ltd.**, featuring over 12 months of organic activity.
+## Local development status
 
-| Role | Credentials | Access Level |
-| :--- | :--- | :--- |
-| **Manager** | `pranali@northstar-tech.com` / `northstar2025` | Document Creation, Workflow Management |
-| **Administrator** | `admin@northstar-tech.com` / `admin123` | Global Audit, Metrics, System Health |
+This project is configured to run without Docker or a paid database setup in local development.
 
-> **Quick Start:** Run `python scripts/seed_demo_data.py` to reset the dashboard to its "lived-in" corporate state.
+- Backend defaults to SQLite via `sqlite+aiosqlite:///./local_dev.db`
+- PostgreSQL remains available as an optional override when `DATABASE_URL` or `POSTGRES_*` values are set
+- Frontend runs with the standard Next.js dev flow
 
 ---
 
-## 🚀 Key Product Features
+## Quick start
 
-### 📄 Intelligent Document Lifecycle
-*   **Visual Editor:** Responsive, percentage-based coordinate system for precise field placement on any PDF.
-*   **Multi-Signer Support:** Atomic state machine managing `PENDING` -> `PARTIALLY_SIGNED` -> `COMPLETED` transitions.
-*   **Final PDF Engine:** High-fidelity server-side PDF generation with dynamic signature overlays.
-*   **Rejection & Expiration:** Robust handling of business edge cases with automated owner notifications.
-
-### 🛡️ Security & Engineering Maturity
-*   **Identity Isolation:** Dual-portal architecture strictly separating Admin oversight from User workflows.
-*   **Token Hardening:** One-way SHA-256 hashing for all signing tokens; single-use "burn" logic.
-*   **Audit Trail:** Immutable, searchable ledger of every system event for compliance.
-*   **Resilient Infrastructure:** Rate limiting, secure headers, and transaction-safe background jobs.
-
----
-
-## 🛠️ Technology Stack
-
-### Backend (The Engine)
-*   **FastAPI:** High-performance asynchronous framework.
-*   **PostgreSQL + SQLAlchemy:** Robust relational storage with asyncpg drivers.
-*   **Alembic:** Precise schema versioning and migrations.
-*   **ReportLab & PyPDF:** Advanced PDF processing and coordinate mapping.
-*   **APScheduler:** Reliable background jobs for reminders and cleanups.
-
-### Frontend (The Experience)
-*   **Next.js (App Router):** Modern React architecture.
-*   **Tailwind CSS:** "Cozy Premium" design system using Stone/Navy/Emerald palettes.
-*   **Zustand:** Centralized state management for auth and editor contexts.
-*   **React-PDF:** Interactive document rendering and field annotation.
-
----
-
-## 📦 Local Installation
-
-### Prerequisites
-*   Python 3.12+
-*   Node.js 20+
-*   PostgreSQL 16+
-
-### 1. Backend Setup
+### Backend
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-alembic upgrade head
-python scripts/seed_demo_data.py
+python -m alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-### 2. Frontend Setup
+### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
+### Troubleshooting
+If `pytest` or `uvicorn` reports `ModuleNotFoundError: No module named 'app'`, activate the backend virtual environment first:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+```
+
+### Optional demo seed
+```bash
+cd backend
+.\.venv\Scripts\python.exe scripts/seed_demo_data.py
+```
+
 ---
 
-## 📜 Architectural Decisions
-*   **Coordinate System:** Used percentage-based coordinates (0-100) instead of pixels to ensure signatures stay perfectly aligned regardless of the signer's device resolution.
-*   **Token Security:** Signing links are high-entropy, hashed on the server, and never stored in plain text to prevent link hijacking.
-*   **Portal Separation:** Implemented mandatory server-side role checks for the `/admin` routes to ensure zero privilege escalation.
+## Architecture
+
+### Backend
+- FastAPI
+- SQLAlchemy async ORM
+- Alembic migrations
+- SQLite local fallback with optional PostgreSQL
+
+### Frontend
+- Next.js App Router
+- Tailwind CSS
+- Type-safe client patterns
 
 ---
 
-## 📜 License
+## Notes
+
+This project is suitable for local development and portfolio/demo validation without paying for infrastructure. Production deployment is intentionally left out of scope here.
+
+---
+
+## License
 This project is for educational and portfolio purposes. All rights reserved.

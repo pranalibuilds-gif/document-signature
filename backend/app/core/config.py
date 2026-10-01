@@ -23,20 +23,44 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+    ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def normalize_cors_origins(cls, v: object) -> list[str]:
+        """Supports comma-delimited env values and trims whitespace for local multi-origin dev setups."""
+        if v is None:
+            return []
+        if isinstance(v, str):
+            parsed = [item.strip() for item in v.split(",") if item.strip()]
+            return parsed or ["http://localhost:3000", "http://127.0.0.1:3000"]
+        if isinstance(v, list):
+            return [str(item).strip() for item in v if str(item).strip()]
+        return [str(v).strip()]
 
     # --- Database Settings ---
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
+    DATABASE_URL: str | None = None
+    POSTGRES_SERVER: str | None = None
+    POSTGRES_USER: str | None = None
+    POSTGRES_PASSWORD: str | None = None
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str
+    POSTGRES_DB: str | None = None
 
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        """Constructs the asynchronous PostgreSQL connection string."""
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        """Uses PostgreSQL when configured, otherwise falls back to SQLite for local development."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+
+        if self.POSTGRES_SERVER and self.POSTGRES_USER and self.POSTGRES_PASSWORD and self.POSTGRES_DB:
+            return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+        return "sqlite+aiosqlite:///./local_dev.db"
 
     # --- JWT & Security Settings ---
     SECRET_KEY: str # Used for signing tokens. Must be provided in .env

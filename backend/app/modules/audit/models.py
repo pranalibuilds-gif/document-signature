@@ -1,8 +1,7 @@
 import uuid
 from typing import Any
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, Enum, UUID, Index
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import ForeignKey, Enum, UUID, Index, JSON
 from app.common.models import UUIDMixin, TimestampMixin
 from app.common.enums import AuditActorType, AuditEventType
 from app.core.database import Base
@@ -26,8 +25,8 @@ class AuditLog(Base, UUIDMixin, TimestampMixin):
         Enum(AuditEventType), nullable=False, index=True
     )
 
-    # event_data uses JSONB for PostgreSQL optimization
-    event_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    # JSON works across SQLite and PostgreSQL while preserving structured event payloads.
+    event_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Indices for performance (as approved)
     __table_args__ = (
