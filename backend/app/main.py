@@ -14,6 +14,7 @@ from app.core.middleware.security import SecurityHeadersMiddleware
 from app.core.exceptions import global_exception_handler, http_exception_handler, validation_exception_handler
 from app.core.logging import logger
 from app.core.rate_limit import limiter
+from app.core.database import initialize_database
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
@@ -25,6 +26,7 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Initialize resources
     logger.info("Application starting up...")
+    await initialize_database()
     start_scheduler()
 
     yield # Application runs here

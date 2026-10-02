@@ -14,6 +14,7 @@ from app.modules.documents.repository import DocumentRepository
 from app.modules.fields.repository import SignatureFieldRepository
 from app.modules.audit.service import AuditService
 from app.common.enums import DocumentStatus, SignerStatus, AuditActorType, AuditEventType, FieldType
+from app.common.datetime_utils import ensure_utc
 from app.core.logging import logger
 
 class SigningService:
@@ -37,12 +38,13 @@ class SigningService:
             logger.warning(f"Invalid signing link attempt with hash: {token_hash}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid signing link")
 
-        if token.expires_at < datetime.now(timezone.utc):
+        if ensure_utc(token.expires_at) < datetime.now(timezone.utc):
             logger.warning(f"Expired signing link attempt for signer: {token.document_signer_id}")
             raise HTTPException(status_code=status.HTTP_410_GONE, detail="Signing link has expired")
 
-        # used_at logic: In 3.4B we don't block opening if used_at is set,
-        # but we might block if the signer has already signed.
+        if token.used_at is not None:
+            logger.warning(f"Attempted to reuse an already-used signing link for signer: {token.document_signer_id}")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This signing link has already been used")
 
         signer = await self.signer_repo.get_by_id(token.document_signer_id)
         logger.info(f"Signer session opened: {signer.email} for document {signer.document_id}")

@@ -21,6 +21,7 @@ from app.core.security.hashing import hash_password, verify_password
 from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
 from app.core.config import settings
 from app.core.logging import logger
+from app.common.datetime_utils import ensure_utc
 
 class AuthService:
     def __init__(self, session: AsyncSession):
@@ -91,7 +92,7 @@ class AuthService:
         token_hash = self._hash_token(token_str)
         db_token = await self.verification_repo.get_by_hash(token_hash)
 
-        if not db_token or db_token.used_at or db_token.expires_at < datetime.now(timezone.utc):
+        if not db_token or db_token.used_at or ensure_utc(db_token.expires_at) < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired verification token",
@@ -140,7 +141,7 @@ class AuthService:
         token_hash = self._hash_token(token_str)
         db_token = await self.password_reset_repo.get_by_hash(token_hash)
 
-        if not db_token or db_token.used_at or db_token.expires_at < datetime.now(timezone.utc):
+        if not db_token or db_token.used_at or ensure_utc(db_token.expires_at) < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired reset token",
@@ -227,7 +228,7 @@ class AuthService:
         token_hash = self._hash_token(refresh_token_str)
         db_token = await self.auth_repo.get_refresh_token_by_hash(token_hash)
 
-        if not db_token or db_token.revoked_at or db_token.expires_at < datetime.now(timezone.utc):
+        if not db_token or db_token.revoked_at or ensure_utc(db_token.expires_at) < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token expired or revoked",

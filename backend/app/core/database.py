@@ -2,6 +2,7 @@
 Database configuration and session management.
 Uses SQLAlchemy with asyncpg for high-performance asynchronous PostgreSQL interaction.
 """
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
@@ -27,7 +28,20 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+
+async def initialize_database() -> None:
+    """Creates tables for the local SQLite database when the schema is not initialized yet."""
+    async with engine.begin() as connection:
+        if settings.SQLALCHEMY_DATABASE_URI.startswith("sqlite"):
+            tables = await connection.run_sync(lambda sync_conn: inspect(sync_conn).get_table_names())
+            if not tables:
+                await connection.run_sync(Base.metadata.create_all)
+
+
 # --- Base Model Class ---
 # All models in the application must inherit from this class to be discovered by Alembic.
 class Base(DeclarativeBase):
     pass
+
+# Import all models so SQLite/local schema creation sees the full metadata set.
+from app.modules import models  # noqa: F401
