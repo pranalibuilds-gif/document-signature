@@ -9,6 +9,8 @@ ENV/
 
 # Database
 *.sqlite3
+local_dev.db
+backend/local_dev.db
 
 # Environment
 .env

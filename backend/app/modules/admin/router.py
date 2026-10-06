@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, require_admin
+from app.core.logging import logger
 from app.modules.admin.service import AdminService
 from app.modules.admin.schemas import DashboardMetrics, SchedulerStatus, NotificationMetrics, HealthDetails
 from app.modules.users.schemas import UserRead
@@ -92,7 +93,7 @@ async def get_health_details(
         await db.execute(text("SELECT 1"))
         db_alive = True
     except Exception:
-        pass
+        logger.exception("Health check database probe failed")
 
     storage_ok = os.path.exists(settings.STORAGE_BASE_PATH)
 

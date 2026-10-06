@@ -90,10 +90,17 @@ class NotificationService:
                 if success:
                     await self.repo.update_status(notif.id, NotificationStatus.SENT)
                     success_count += 1
-            except Exception:
-                pass
+                else:
+                    await self.repo.update_status(
+                        notif.id,
+                        NotificationStatus.FAILED,
+                        "Provider reported unsuccessful delivery during retry",
+                    )
+            except Exception as exc:
+                logger.exception("Failed retry for notification %s", notif.id)
+                await self.repo.update_status(notif.id, NotificationStatus.FAILED, str(exc))
 
-        if success_count > 0:
+        if failed:
             await self.session.commit()
 
         return success_count

@@ -1,25 +1,30 @@
+"""Database bootstrap and shared SQLAlchemy configuration.
+
+The project intentionally supports both Postgres for production-like setups and
+SQLite for local development. This module centralizes the engine and the base
+ORM model so the rest of the application can work with a single database API.
 """
-Database configuration and session management.
-Uses SQLAlchemy with asyncpg for high-performance asynchronous PostgreSQL interaction.
-"""
+
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 # --- Database Engine ---
-# SQLite requires check_same_thread=False for async use in the local development fallback.
+# SQLite requires check_same_thread=False when using the async engine in a
+# local development environment. PostgreSQL does not need this extra flag.
 engine = create_async_engine(
     settings.SQLALCHEMY_DATABASE_URI,
-    echo=settings.DEBUG, # Logs SQL queries when in development mode
+    echo=settings.DEBUG,  # Logs SQL queries when in development mode.
     future=True,
     pool_pre_ping=True,
     connect_args={"check_same_thread": False} if settings.SQLALCHEMY_DATABASE_URI.startswith("sqlite") else {},
 )
 
 # --- Session Factory ---
-# Produces database sessions for every request.
-# expire_on_commit=False is crucial for async usage to prevent unexpected DB queries after commit.
+# Every request gets its own async session from this factory. `expire_on_commit`
+# stays disabled so data remains usable after commit during async flows and
+# serialization without issuing additional database queries.
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -39,9 +44,12 @@ async def initialize_database() -> None:
 
 
 # --- Base Model Class ---
-# All models in the application must inherit from this class to be discovered by Alembic.
+# All models in the application inherit from this base class so SQLAlchemy can
+# discover them and Alembic migrations can track schema changes consistently.
 class Base(DeclarativeBase):
     pass
 
-# Import all models so SQLite/local schema creation sees the full metadata set.
-from app.modules import models  # noqa: F401
+# Import all models so the local SQLite metadata includes the full application
+# schema during initialization. This must happen after Base is defined so the
+# model metadata is registered to the correct declarative base.
+from app.modules import models  # noqa: E402,F401
