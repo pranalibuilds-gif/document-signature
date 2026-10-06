@@ -21,7 +21,7 @@ export default function SigningSuccessPage() {
             Completed! <PartyPopper className="text-accent" />
           </CardTitle>
           <CardDescription className="text-lg mt-2">
-            You've successfully signed the document.
+            You&apos;ve successfully signed the document.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -29,7 +29,7 @@ export default function SigningSuccessPage() {
             The document owner has been notified. Once all signers have completed the workflow, you will receive a copy of the finalized PDF via email.
           </p>
           <div className="p-4 rounded-xl bg-stone-100/50 border text-xs text-stone-500 italic">
-            "This signing session is now recorded in the audit trail. You can safely exit this page."
+            &quot;This signing session is now recorded in the audit trail. You can safely exit this page.&quot;
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">

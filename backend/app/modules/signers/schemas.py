@@ -18,3 +18,9 @@ class SignerRead(SignerBase, IDSchema, TimestampSchema):
     signed_at: datetime | None = None
     rejected_at: datetime | None = None
     rejection_reason: str | None = None
+
+
+class SignerDirectoryEntry(BaseSchema):
+    email: EmailStr
+    document_count: int
+    last_used_at: datetime

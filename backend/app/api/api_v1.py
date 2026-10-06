@@ -9,6 +9,7 @@ organized into separate domains.
 from fastapi import APIRouter
 from app.modules.auth.router import router as auth_router
 from app.modules.documents.router import router as documents_router
+from app.modules.signers.router import directory_router as signer_directory_router
 from app.modules.signers.router import router as signers_router
 from app.modules.fields.router import router as fields_router
 from app.modules.signing.router import router as signing_router
@@ -25,6 +26,7 @@ api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(documents_router)
 api_router.include_router(signers_router)
+api_router.include_router(signer_directory_router)
 api_router.include_router(fields_router)
 api_router.include_router(signing_router)
 api_router.include_router(admin_router)

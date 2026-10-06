@@ -13,7 +13,7 @@ export default function NotFound() {
       <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-6xl">404</h1>
       <h2 className="mt-4 text-2xl font-semibold text-primary">Page not found</h2>
       <p className="mt-4 text-stone-500 max-w-md">
-        Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+        Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
       </p>
       <div className="mt-10 flex flex-col sm:flex-row gap-4">
         <Button variant="outline" onClick={() => window.history.back()}>

@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import select, delete, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.modules.documents.models import Document
 from app.modules.signers.models import DocumentSigner, SigningToken
 
 class SignerRepository:
@@ -42,6 +43,21 @@ class SignerRepository:
             select(func.count()).select_from(DocumentSigner).where(DocumentSigner.document_id == document_id)
         )
         return result.scalar_one()
+
+    async def list_directory_by_owner(self, owner_id: uuid.UUID) -> list[dict]:
+        email_key = func.lower(DocumentSigner.email)
+        result = await self.session.execute(
+            select(
+                func.min(DocumentSigner.email).label("email"),
+                func.count(func.distinct(DocumentSigner.document_id)).label("document_count"),
+                func.max(DocumentSigner.created_at).label("last_used_at"),
+            )
+            .join(Document, Document.id == DocumentSigner.document_id)
+            .where(Document.owner_id == owner_id)
+            .group_by(email_key)
+            .order_by(func.max(DocumentSigner.created_at).desc(), email_key)
+        )
+        return [dict(row._mapping) for row in result]
 
     # Token operations
     async def create_token(self, token: SigningToken) -> SigningToken:

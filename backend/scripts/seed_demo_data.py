@@ -3,7 +3,7 @@ import uuid
 import random
 import os
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import text
+from sqlalchemy import delete, text
 from reportlab.pdfgen import canvas
 
 from app.core.database import AsyncSessionLocal
@@ -11,9 +11,12 @@ from app.core.security.hashing import hash_password
 from app.common.enums import DocumentStatus, SignerStatus, UserRole, AuditActorType, AuditEventType, FieldType
 from app.modules.users.models import User
 from app.modules.documents.models import Document, DocumentFile
-from app.modules.signers.models import DocumentSigner
+from app.modules.signers.models import DocumentSigner, SigningToken
 from app.modules.fields.models import SignatureField
 from app.modules.audit.models import AuditLog
+from app.modules.auth.models import EmailVerificationToken, PasswordResetToken, RefreshToken
+from app.modules.notifications.models import Notification
+from app.modules.signing.models import FieldValue
 from app.core.config import settings
 
 COMPANY_NAME = "Northstar Technologies Pvt. Ltd."
@@ -69,7 +72,30 @@ async def seed():
     async with AsyncSessionLocal() as session:
         print("--- NORTHSTAR TECHNOLOGIES SEED START ---")
         print("Step 1: Wiping previous data...")
-        await session.execute(text("TRUNCATE TABLE field_values, signing_tokens, password_reset_tokens, email_verification_tokens, signature_fields, document_signers, document_files, audit_logs, notifications, refresh_tokens, documents, users CASCADE"))
+        if session.get_bind().dialect.name == "sqlite":
+            # SQLite has no TRUNCATE or CASCADE syntax. Clear child tables first
+            # so the same seed script works with the default local database.
+            for model in (
+                FieldValue,
+                SigningToken,
+                SignatureField,
+                DocumentSigner,
+                DocumentFile,
+                AuditLog,
+                Notification,
+                RefreshToken,
+                EmailVerificationToken,
+                PasswordResetToken,
+                Document,
+                User,
+            ):
+                await session.execute(delete(model))
+        else:
+            await session.execute(text(
+                "TRUNCATE TABLE field_values, signing_tokens, password_reset_tokens, "
+                "email_verification_tokens, signature_fields, document_signers, "
+                "document_files, audit_logs, notifications, refresh_tokens, documents, users CASCADE"
+            ))
         await session.commit()
 
         print("Step 2: Creating Accounts...")

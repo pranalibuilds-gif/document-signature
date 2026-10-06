@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.signers.models import DocumentSigner
 from app.modules.signers.repository import SignerRepository
-from app.modules.signers.schemas import SignerCreate
+from app.modules.signers.schemas import SignerCreate, SignerDirectoryEntry
 from app.modules.documents.service import DocumentService
 from app.modules.users.repository import UserRepository
 from app.modules.audit.service import AuditService
@@ -106,3 +106,7 @@ class SignerService:
         # Validate ownership
         await self.doc_service.get_document(document_id, user_id)
         return await self.repo.list_by_document(document_id)
+
+    async def list_directory(self, user_id: uuid.UUID) -> list[SignerDirectoryEntry]:
+        entries = await self.repo.list_directory_by_owner(user_id)
+        return [SignerDirectoryEntry.model_validate(entry) for entry in entries]

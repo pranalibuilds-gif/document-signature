@@ -43,12 +43,12 @@ export default function ForgotPasswordPage() {
             </div>
             <CardTitle className="text-2xl">Check your email</CardTitle>
             <CardDescription>
-              We've sent a password reset link to <strong>{email}</strong>.
+              We&apos;ve sent a password reset link to <strong>{email}</strong>.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              If you don't receive an email within a few minutes, please check your spam folder.
+              If you don&apos;t receive an email within a few minutes, please check your spam folder.
             </p>
           </CardContent>
           <CardFooter>
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
             <PenTool size={32} />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">Forgot Password?</h1>
-          <p className="text-muted-foreground mt-2">Enter your email and we'll send you a reset link</p>
+          <p className="text-muted-foreground mt-2">Enter your email and we&apos;ll send you a reset link</p>
         </div>
 
         <Card className="border-border/50 shadow-lg">

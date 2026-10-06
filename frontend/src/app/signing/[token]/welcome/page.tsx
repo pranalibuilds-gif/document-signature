@@ -84,7 +84,7 @@ export default function SigningWelcomePage() {
           </div>
 
           <div className="p-4 rounded-xl bg-stone-50 border text-xs text-muted-foreground leading-relaxed">
-            By clicking "Start Signing", you agree that your electronic signature will have the same legal effect as a handwritten signature.
+            By clicking &quot;Start Signing&quot;, you agree that your electronic signature will have the same legal effect as a handwritten signature.
           </div>
         </CardContent>
 

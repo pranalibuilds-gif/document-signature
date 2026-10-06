@@ -74,8 +74,9 @@ export default function DocumentEditorPage() {
         setDocument(docRes.data)
         setSigners(signersRes.data)
 
-        if (signersRes.data.length > 0 && !currentSignerId) {
-          setCurrentSigner(signersRes.data[0].id)
+        const editorState = useEditorStore.getState()
+        if (signersRes.data.length > 0 && !editorState.currentSignerId) {
+          editorState.setCurrentSigner(signersRes.data[0].id)
         }
 
         // Map backend fields to editor store format
@@ -90,7 +91,7 @@ export default function DocumentEditorPage() {
           height: f.height,
           value: f.pre_filled_value
         }))
-        setFields(mappedFields)
+        useEditorStore.getState().setFields(mappedFields)
 
       } catch (err) {
         console.error("Failed to fetch document data", err)

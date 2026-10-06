@@ -41,7 +41,7 @@ export default function SigningPage() {
       }
     }
     fetchSession()
-  }, [token])
+  }, [token, setSession])
 
   const handleSubmit = async () => {
     if (!isComplete()) return

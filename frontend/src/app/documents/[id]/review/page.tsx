@@ -145,7 +145,7 @@ export default function DocumentReviewPage() {
                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 flex gap-3">
                   <CheckCircle2 size={20} className="text-amber-500 shrink-0" />
                   <p className="text-xs text-amber-800 leading-relaxed">
-                    You haven't placed any signature fields yet. You must add at least one field in the <strong>Editor</strong> before you can activate this document.
+                    You haven&apos;t placed any signature fields yet. You must add at least one field in the <strong>Editor</strong> before you can activate this document.
                   </p>
                </div>
             )}
