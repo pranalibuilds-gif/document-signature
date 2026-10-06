@@ -21,6 +21,7 @@ jobs:
       MAX_UPLOAD_SIZE_MB: 20
       MAIL_PROVIDER: mock
       MAIL_FROM_EMAIL: noreply@example.com
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@v4
 
@@ -42,8 +43,6 @@ jobs:
   frontend:
     name: Frontend build
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
 
